@@ -1,12 +1,14 @@
 
+#include "w:/libs/rain.c"
+
 #include "types.h"
 
-#ifdef _WIN32
-#include "../sdl/include/SDL.h"
-#undef main
-#elif __APPLE__
-#include <SDL2/SDL.h>
-#endif
+//#ifdef _WIN32
+//#include "../sdl/include/SDL.h"
+//#undef main
+//#elif __APPLE__
+//#include <SDL2/SDL.h>
+//#endif
 
 #include <string>
 
@@ -45,6 +47,8 @@ extern "C" {
 #include "videoLua.h"
 #include "videoLua.cpp"
 
+#include "draw.cpp"
+
 #include "lua.h"
 #include "lua.cpp"
 
@@ -74,8 +78,6 @@ int main(int argc, char **argv)
 	chdir("../../..");
 	//std::cout << "Current Path: " << path << std::endl;
 #endif
-	
-	SDL_SetMainReady();
 
 	Engine engine = Engine();
 	engine.run();

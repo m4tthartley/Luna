@@ -29,10 +29,37 @@ Lua::Lua() {
 	l = lua_open();
 	luaL_openlibs(l);
 
+	luaL_dostring(l,
+		"function vec2(x, y)"
+		"	return {"
+		"		x = x or 0.0,"
+		"		y = y or 0.0,"
+		"	}"
+		"end\n"
+		"function vec3(x, y, z)"
+		"	return {"
+		"		x = x or 0.0,"
+		"		y = y or 0.0,"
+		"		z = z or 0.0,"
+		"	}"
+		"end\n"
+
+		"window = {"
+		"	size = vec2(1280, 720),"
+		"	title = \"JellyMoon\","
+		"	fullscreen = false,"
+		"}"
+
+		"mouse = {"
+		"	position = vec2(0.0, 0.0),"
+		"}"
+	);
+
 	registerTables();
 
-	if (luaL_dofile(l, "conf.lua") != 0) error = true;
-	if (lua_type(l, -1) == LUA_TSTRING) std::cout << lua_tostring(l, -1) << std::endl;
+	/*if (luaL_dofile(l, "conf.lua") != 0) error = true;
+	if (lua_type(l, -1) == LUA_TSTRING) std::cout << lua_tostring(l, -1) << std::endl;*/
+
 	std::string mainpath = "main.lua";
 	if (confVar("mainpath")) mainpath = lua_tostring(l, -1);
 	lua_pop(l, 1);
@@ -51,6 +78,42 @@ bool Lua::confVar(std::string var) {
 		}
 	}
 
+	return false;
+}
+
+bool Lua::get_table_var(char *table, char *var) {
+	lua_getfield(l, LUA_GLOBALSINDEX, table);
+	if (lua_istable(l, -1)) {
+		lua_getfield(l, -1, var);
+		if (!lua_isnil(l, -1)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void Lua::set_table_table_number(char *table, char *table2, char *var, float num) {
+	lua_getfield(l, LUA_GLOBALSINDEX, table);
+	if (lua_istable(l, -1)) {
+		lua_getfield(l, -1, table2);
+		if (lua_istable(l, -1)) {
+			lua_pushnumber(l, num);
+			lua_setfield(l, -2, var);
+		}
+	}
+}
+
+bool Lua::get_table_table_var(char *table, char *table2, char *var) {
+	lua_getfield(l, LUA_GLOBALSINDEX, table);
+	if (lua_istable(l, -1)) {
+		lua_getfield(l, -1, table2);
+		if (lua_istable(l, -1)) {
+			lua_getfield(l, -1, var);
+			if (!lua_isnil(l, -1)) {
+				return true;
+			}
+		}
+	}
 	return false;
 }
 
@@ -119,10 +182,23 @@ void Lua::registerTable(std::string tableName, const luaL_reg* functions) {
 	luaL_register(l, tableName.c_str(), functions);
 }
 
+void Lua::create_lua_func(char *name, lua_CFunction func) {
+	lua_pushcfunction(l, func);
+	lua_setglobal(l, name);
+}
+
 void Lua::registerTables() {
 
+	create_lua_func("draw_rect", lua_draw_rect);
+	create_lua_func("set_tex_coords", lua_set_tex_coords);
+	create_lua_func("draw_rect_texture", lua_draw_rect_texture);
+	create_lua_func("draw_circle", lua_draw_circle);
+	create_lua_func("set_color", lua_set_color);
+	create_lua_func("load_texture", lua_load_texture);
+	create_lua_func("rotate", lua_rotate);
+
 	// Video
-	registerFunction("video", "enableTextures", luaEnableTextures);
+	/*registerFunction("video", "enableTextures", luaEnableTextures);
 	registerFunction("video", "clear", luaClear);
 	registerFunction("video", "push", luaPush);
 	registerFunction("video", "pop", luaPop);
@@ -137,7 +213,7 @@ void Lua::registerTables() {
 	registerFunction("video", "renderCircle", luaRenderCircle);
 	registerFunction("video", "renderElipse", luaRenderElipse);
 	registerFunction("video", "loadTexture", luaLoadTexture);
-	registerFunction("video", "loadIdentity", luaLoadIdentity);
+	registerFunction("video", "loadIdentity", luaLoadIdentity);*/
 
 #if 0
 	registerFunction("video", "create_buffer", lua_create_buffer);
