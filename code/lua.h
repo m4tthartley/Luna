@@ -14,6 +14,9 @@ public:
 	bool Lua::get_table_var(char *table, char *var);
 	bool Lua::get_table_table_var(char *table, char *table2, char *var);
 	void Lua::set_table_table_number(char *table, char *table2, char *var, float num);
+	void Lua::set_table_table_bool(char *table, char *table2, char *var, bool b);
+	void Lua::set_table_table_digital_button(char *table, char *table2, digital_button b);
+	void Lua::set_table_number(char *table, char *var, double num);
 
 	bool confVar(std::string var);
 	bool appVar(std::string var);

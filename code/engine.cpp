@@ -42,9 +42,19 @@ struct Engine {
 	Rain rain = {};
 
 	Engine() {
+		lua = new Lua();
+		lua->appFunc("init");
+		if (lua->get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua->l, -1);
+		if (lua->get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua->l, -1);
+		if (lua->get_table_var("window", "title")) rain.window_title = (char*)lua_tostring(lua->l, -1);
+
 		rain_init(&rain);
 
-		lua = new Lua();
+		enable_dynamic_texture_loading = true;
+		for (int i = 0; i < texture_count; ++i) {
+			textures[i].tex = _load_texture(textures[i].file);
+		}
+		
 		//lua->loadSettings(width, height, viewportScale, fullscreen, title, limitFrames);
 
 		glEnable(GL_BLEND);
@@ -53,18 +63,16 @@ struct Engine {
 		glAlphaFunc(GL_GREATER, 0.1f);
 		glEnable(GL_ALPHA_TEST);
 
-		glViewport(0, 0, (int)(width*viewportScale), (int)(height*viewportScale));
+		//glViewport(0, 0, (int)(width*viewportScale), (int)(height*viewportScale));
+		glViewport(0, 0, rain.window_width, rain.window_height);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(0, width, height, 0, -100, 100);
+		/*glOrtho(0, width, height, 0, -100, 100);*/
+		glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glClearColor(0, 0, 0, 1);
 
-		lua->appFunc("init");
-		if (lua->get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua->l, -1);
-		if (lua->get_table_var("window", "title")) rain.window_title = (char*)lua_tostring(lua->l, -1);
-		
 		while (!rain.quit) {
 			rain_update(&rain);
 
@@ -72,6 +80,92 @@ struct Engine {
 
 			lua->set_table_table_number("mouse", "position", "x", rain.mouse.position.x);
 			lua->set_table_table_number("mouse", "position", "y", rain.mouse.position.y);
+			lua->set_table_table_number("mouse", "position_delta", "x", rain.mouse.position_delta.x);
+			lua->set_table_table_number("mouse", "position_delta", "y", rain.mouse.position_delta.y);
+
+			lua->set_table_table_bool("mouse", "left", "down", rain.mouse.left.down);
+			lua->set_table_table_bool("mouse", "left", "pressed", rain.mouse.left.pressed);
+			lua->set_table_table_bool("mouse", "left", "released", rain.mouse.left.released);
+
+			lua->set_table_table_bool("mouse", "right", "down", rain.mouse.right.down);
+			lua->set_table_table_bool("mouse", "right", "pressed", rain.mouse.right.pressed);
+			lua->set_table_table_bool("mouse", "right", "released", rain.mouse.right.released);
+
+			lua->set_table_table_bool("mouse", "middle", "down", rain.mouse.middle.down);
+			lua->set_table_table_bool("mouse", "middle", "pressed", rain.mouse.middle.pressed);
+			lua->set_table_table_bool("mouse", "middle", "released", rain.mouse.middle.released);
+
+			{
+				lua->set_table_table_digital_button("keyboard", "n1", rain.keys[KEY_1]);
+				lua->set_table_table_digital_button("keyboard", "n2", rain.keys[KEY_2]);
+				lua->set_table_table_digital_button("keyboard", "n3", rain.keys[KEY_3]);
+				lua->set_table_table_digital_button("keyboard", "n4", rain.keys[KEY_4]);
+				lua->set_table_table_digital_button("keyboard", "n5", rain.keys[KEY_5]);
+				lua->set_table_table_digital_button("keyboard", "n6", rain.keys[KEY_6]);
+				lua->set_table_table_digital_button("keyboard", "n7", rain.keys[KEY_7]);
+				lua->set_table_table_digital_button("keyboard", "n8", rain.keys[KEY_8]);
+				lua->set_table_table_digital_button("keyboard", "n9", rain.keys[KEY_9]);
+				lua->set_table_table_digital_button("keyboard", "n0", rain.keys[KEY_0]);
+				lua->set_table_table_digital_button("keyboard", "a", rain.keys[KEY_A]);
+				lua->set_table_table_digital_button("keyboard", "b", rain.keys[KEY_B]);
+				lua->set_table_table_digital_button("keyboard", "c", rain.keys[KEY_C]);
+				lua->set_table_table_digital_button("keyboard", "d", rain.keys[KEY_D]);
+				lua->set_table_table_digital_button("keyboard", "e", rain.keys[KEY_E]);
+				lua->set_table_table_digital_button("keyboard", "f", rain.keys[KEY_F]);
+				lua->set_table_table_digital_button("keyboard", "g", rain.keys[KEY_G]);
+				lua->set_table_table_digital_button("keyboard", "h", rain.keys[KEY_H]);
+				lua->set_table_table_digital_button("keyboard", "i", rain.keys[KEY_I]);
+				lua->set_table_table_digital_button("keyboard", "j", rain.keys[KEY_J]);
+				lua->set_table_table_digital_button("keyboard", "k", rain.keys[KEY_K]);
+				lua->set_table_table_digital_button("keyboard", "l", rain.keys[KEY_L]);
+				lua->set_table_table_digital_button("keyboard", "m", rain.keys[KEY_M]);
+				lua->set_table_table_digital_button("keyboard", "n", rain.keys[KEY_N]);
+				lua->set_table_table_digital_button("keyboard", "o", rain.keys[KEY_O]);
+				lua->set_table_table_digital_button("keyboard", "p", rain.keys[KEY_P]);
+				lua->set_table_table_digital_button("keyboard", "q", rain.keys[KEY_Q]);
+				lua->set_table_table_digital_button("keyboard", "r", rain.keys[KEY_R]);
+				lua->set_table_table_digital_button("keyboard", "s", rain.keys[KEY_S]);
+				lua->set_table_table_digital_button("keyboard", "t", rain.keys[KEY_T]);
+				lua->set_table_table_digital_button("keyboard", "u", rain.keys[KEY_U]);
+				lua->set_table_table_digital_button("keyboard", "v", rain.keys[KEY_V]);
+				lua->set_table_table_digital_button("keyboard", "w", rain.keys[KEY_W]);
+				lua->set_table_table_digital_button("keyboard", "x", rain.keys[KEY_X]);
+				lua->set_table_table_digital_button("keyboard", "y", rain.keys[KEY_Y]);
+				lua->set_table_table_digital_button("keyboard", "z", rain.keys[KEY_Z]);
+
+				lua->set_table_table_digital_button("keyboard", "left", rain.keys[KEY_LEFT]);
+				lua->set_table_table_digital_button("keyboard", "right", rain.keys[KEY_RIGHT]);
+				lua->set_table_table_digital_button("keyboard", "up", rain.keys[KEY_UP]);
+				lua->set_table_table_digital_button("keyboard", "down", rain.keys[KEY_DOWN]);
+				lua->set_table_table_digital_button("keyboard", "lcontrol", rain.keys[KEY_LCTRL]);
+				lua->set_table_table_digital_button("keyboard", "rcontrol", rain.keys[KEY_RCTRL]);
+				lua->set_table_table_digital_button("keyboard", "control", rain.keys[KEY_CTRL]);
+				lua->set_table_table_digital_button("keyboard", "lshift", rain.keys[KEY_LSHIFT]);
+				lua->set_table_table_digital_button("keyboard", "rshift", rain.keys[KEY_RSHIFT]);
+				lua->set_table_table_digital_button("keyboard", "shift", rain.keys[KEY_SHIFT]);
+				lua->set_table_table_digital_button("keyboard", "alt", rain.keys[KEY_ALT]);
+				lua->set_table_table_digital_button("keyboard", "caps", rain.keys[KEY_CAPS]);
+				lua->set_table_table_digital_button("keyboard", "tab", rain.keys[KEY_TAB]);
+				lua->set_table_table_digital_button("keyboard", "space", rain.keys[KEY_SPACE]);
+				lua->set_table_table_digital_button("keyboard", "enter", rain.keys[KEY_RETURN]);
+				lua->set_table_table_digital_button("keyboard", "backspace", rain.keys[KEY_BACKSPACE]);
+				lua->set_table_table_digital_button("keyboard", "escape", rain.keys[KEY_ESCAPE]);
+				lua->set_table_table_digital_button("keyboard", "f1", rain.keys[KEY_F1]);
+				lua->set_table_table_digital_button("keyboard", "f2", rain.keys[KEY_F2]);
+				lua->set_table_table_digital_button("keyboard", "f3", rain.keys[KEY_F3]);
+				lua->set_table_table_digital_button("keyboard", "f4", rain.keys[KEY_F4]);
+				lua->set_table_table_digital_button("keyboard", "f5", rain.keys[KEY_F5]);
+				lua->set_table_table_digital_button("keyboard", "f6", rain.keys[KEY_F6]);
+				lua->set_table_table_digital_button("keyboard", "f7", rain.keys[KEY_F7]);
+				lua->set_table_table_digital_button("keyboard", "f8", rain.keys[KEY_F8]);
+				lua->set_table_table_digital_button("keyboard", "f9", rain.keys[KEY_F9]);
+				lua->set_table_table_digital_button("keyboard", "f10", rain.keys[KEY_F10]);
+				lua->set_table_table_digital_button("keyboard", "f11", rain.keys[KEY_F11]);
+				lua->set_table_table_digital_button("keyboard", "f12", rain.keys[KEY_F12]);
+			}
+
+			lua->set_table_number("time", "dt", rain.dt);
+			lua->set_table_number("time", "seconds", rain.time_s);
 
 			lua->appFunc("update");
 		}

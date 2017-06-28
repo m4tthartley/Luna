@@ -52,6 +52,86 @@ Lua::Lua() {
 
 		"mouse = {"
 		"	position = vec2(0.0, 0.0),"
+		"	position_delta = vec2(0.0, 0.0),"
+		"	left = { down = false, pressed = false, released = false },"
+		"	right = { down = false, pressed = false, released = false },"
+		"	middle = { down = false, pressed = false, released = false },"
+		"	wheel_delta = 0,"
+		"}"
+
+		"keyboard = {"
+		"	n1 = { down = false, pressed = false, released = false },"
+		"	n2 = { down = false, pressed = false, released = false },"
+		"	n3 = { down = false, pressed = false, released = false },"
+		"	n4 = { down = false, pressed = false, released = false },"
+		"	n5 = { down = false, pressed = false, released = false },"
+		"	n6 = { down = false, pressed = false, released = false },"
+		"	n7 = { down = false, pressed = false, released = false },"
+		"	n8 = { down = false, pressed = false, released = false },"
+		"	n9 = { down = false, pressed = false, released = false },"
+		"	n0 = { down = false, pressed = false, released = false },"
+
+		"	a = { down = false, pressed = false, released = false },"
+		"	b = { down = false, pressed = false, released = false },"
+		"	c = { down = false, pressed = false, released = false },"
+		"	d = { down = false, pressed = false, released = false },"
+		"	e = { down = false, pressed = false, released = false },"
+		"	f = { down = false, pressed = false, released = false },"
+		"	g = { down = false, pressed = false, released = false },"
+		"	h = { down = false, pressed = false, released = false },"
+		"	i = { down = false, pressed = false, released = false },"
+		"	j = { down = false, pressed = false, released = false },"
+		"	k = { down = false, pressed = false, released = false },"
+		"	l = { down = false, pressed = false, released = false },"
+		"	m = { down = false, pressed = false, released = false },"
+		"	n = { down = false, pressed = false, released = false },"
+		"	o = { down = false, pressed = false, released = false },"
+		"	p = { down = false, pressed = false, released = false },"
+		"	q = { down = false, pressed = false, released = false },"
+		"	r = { down = false, pressed = false, released = false },"
+		"	s = { down = false, pressed = false, released = false },"
+		"	t = { down = false, pressed = false, released = false },"
+		"	u = { down = false, pressed = false, released = false },"
+		"	v = { down = false, pressed = false, released = false },"
+		"	w = { down = false, pressed = false, released = false },"
+		"	x = { down = false, pressed = false, released = false },"
+		"	y = { down = false, pressed = false, released = false },"
+		"	z = { down = false, pressed = false, released = false },"
+
+		"	left = { down = false, pressed = false, released = false },"
+		"	right = { down = false, pressed = false, released = false },"
+		"	up = { down = false, pressed = false, released = false },"
+		"	down = { down = false, pressed = false, released = false },"
+		"	lcontrol = { down = false, pressed = false, released = false },"
+		"	rcontrol = { down = false, pressed = false, released = false },"
+		"	control = { down = false, pressed = false, released = false },"
+		"	lshift = { down = false, pressed = false, released = false },"
+		"	rshift = { down = false, pressed = false, released = false },"
+		"	shift = { down = false, pressed = false, released = false },"
+		"	alt = { down = false, pressed = false, released = false },"
+		"	caps = { down = false, pressed = false, released = false },"
+		"	tab = { down = false, pressed = false, released = false },"
+		"	space = { down = false, pressed = false, released = false },"
+		"	enter = { down = false, pressed = false, released = false },"
+		"	backspace = { down = false, pressed = false, released = false },"
+		"	escape = { down = false, pressed = false, released = false },"
+		"	f1 = { down = false, pressed = false, released = false },"
+		"	f2 = { down = false, pressed = false, released = false },"
+		"	f3 = { down = false, pressed = false, released = false },"
+		"	f4 = { down = false, pressed = false, released = false },"
+		"	f5 = { down = false, pressed = false, released = false },"
+		"	f6 = { down = false, pressed = false, released = false },"
+		"	f7 = { down = false, pressed = false, released = false },"
+		"	f8 = { down = false, pressed = false, released = false },"
+		"	f9 = { down = false, pressed = false, released = false },"
+		"	f10 = { down = false, pressed = false, released = false },"
+		"	f11 = { down = false, pressed = false, released = false },"
+		"	f12 = { down = false, pressed = false, released = false },"
+		"}"
+
+		"time = {"
+		"	dt = 0.0,"
+		"	seconds = 0.0,"
 		"}"
 	);
 
@@ -92,6 +172,14 @@ bool Lua::get_table_var(char *table, char *var) {
 	return false;
 }
 
+void Lua::set_table_number(char *table, char *var, double num) {
+	lua_getfield(l, LUA_GLOBALSINDEX, table);
+	if (lua_istable(l, -1)) {
+		lua_pushnumber(l, num);
+		lua_setfield(l, -2, var);
+	}
+}
+
 void Lua::set_table_table_number(char *table, char *table2, char *var, float num) {
 	lua_getfield(l, LUA_GLOBALSINDEX, table);
 	if (lua_istable(l, -1)) {
@@ -101,6 +189,25 @@ void Lua::set_table_table_number(char *table, char *table2, char *var, float num
 			lua_setfield(l, -2, var);
 		}
 	}
+}
+
+void Lua::set_table_table_bool(char *table, char *table2, char *var, bool b) {
+	lua_getfield(l, LUA_GLOBALSINDEX, table);
+	if (lua_istable(l, -1)) {
+		lua_getfield(l, -1, table2);
+		if (lua_istable(l, -1)) {
+			lua_pushboolean(l, b);
+			lua_setfield(l, -2, var);
+		}
+	}
+
+	lua_pop(l, 2);
+}
+
+void Lua::set_table_table_digital_button(char *table, char *table2, digital_button b) {
+	set_table_table_bool(table, table2, "down", b.down);
+	set_table_table_bool(table, table2, "pressed", b.pressed);
+	set_table_table_bool(table, table2, "released", b.released);
 }
 
 bool Lua::get_table_table_var(char *table, char *table2, char *var) {

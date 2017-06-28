@@ -1,6 +1,13 @@
 
 #include "w:/libs/math.c"
 
+bool enable_dynamic_texture_loading = false;
+struct {
+	GLuint tex;
+	char file[256];
+} textures[256];
+int texture_count = 0;
+
 float2 _tex_coords[4] = {
 	{0.0f, 0.0f},
 	{1.0f, 0.0f},
@@ -8,15 +15,23 @@ float2 _tex_coords[4] = {
 	{0.0f, 1.0f},
 };
 
+float current_rotation = 0.0f;
+
 void draw_rect(float x, float y, float width, float height) {
+	float w = width/2.0f;
+	float h = height/2.0f;
+	glPushMatrix();
+	glTranslatef(x + w, y + h, 0.0f);
+	glRotatef(todeg(current_rotation), 0, 0, 1);
 	glBegin(GL_QUADS);
-
-	glVertex3f(x, y, 0);
-	glVertex3f(x + width, y, 0);
-	glVertex3f(x + width, y + height, 0);
-	glVertex3f(x, y + height, 0);
-
+	glVertex3f(-w, -h, 0);
+	glVertex3f(w, -h, 0);
+	glVertex3f(w, h, 0);
+	glVertex3f(-w, h, 0);
 	glEnd();
+	glPopMatrix();
+
+	current_rotation = 0.0f;
 }
 
 int lua_draw_rect(lua_State* l) {
@@ -52,20 +67,26 @@ int lua_set_tex_coords(lua_State* l) {
 	return 0;
 }
 
-void draw_rect_texture(GLuint texture, float x, float y, float width, float height) {
-	glBindTexture(GL_TEXTURE_2D, texture);
+void draw_rect_texture(int texture, float x, float y, float width, float height) {
+	glBindTexture(GL_TEXTURE_2D, textures[texture].tex);
 	glEnable(GL_TEXTURE_2D);
 
+	float w = width/2.0f;
+	float h = height/2.0f;
+	glPushMatrix();
+	glTranslatef(x + w, y + h, 0.0f);
+	glRotatef(todeg(current_rotation), 0, 0, 1);
 	glBegin(GL_QUADS);
 	glTexCoord2f(_tex_coords[0].x, _tex_coords[0].y);
-	glVertex3f(x, y, 0.0f);
+	glVertex3f(-w, -h, 0.0f);
 	glTexCoord2f(_tex_coords[1].x, _tex_coords[1].y);
-	glVertex3f(x + width, y, 0.0f);
+	glVertex3f(w, -h, 0.0f);
 	glTexCoord2f(_tex_coords[2].x, _tex_coords[2].y);
-	glVertex3f(x + width, y + height, 0.0f);
+	glVertex3f(w, h, 0.0f);
 	glTexCoord2f(_tex_coords[3].x, _tex_coords[3].y);
-	glVertex3f(x, y + height, 0.0f);
+	glVertex3f(-w, h, 0.0f);
 	glEnd();
+	glPopMatrix();
 
 	glDisable(GL_TEXTURE_2D);
 	set_tex_coords(
@@ -73,6 +94,8 @@ void draw_rect_texture(GLuint texture, float x, float y, float width, float heig
 		1.0f, 0.0f,
 		1.0f, 1.0f,
 		0.0f, 1.0f);
+
+	current_rotation = 0.0f;
 }
 
 int lua_draw_rect_texture(lua_State* l) {
@@ -98,11 +121,11 @@ int lua_set_color(lua_State* l) {
 	return 0;
 }
 
-GLuint load_texture(std::string file) {	
+int _load_texture(char *file) {
 	int width;
 	int height;
 	int components;
-	unsigned char *data = stbi_load(file.c_str(), &width, &height, &components, 0);
+	unsigned char *data = stbi_load(file, &width, &height, &components, 0);
 	if (!data) {
 		std::cout << "stb_image: unable to load image" << std::endl;
 		return 0;
@@ -136,8 +159,19 @@ GLuint load_texture(std::string file) {
 	return texture;
 }
 
+int load_texture(char *file) {
+	GLuint texture = 0;
+	if (enable_dynamic_texture_loading) {
+		GLuint texture = _load_texture(file);
+	}
+
+	textures[texture_count].tex = texture;
+	strcpy(textures[texture_count].file, file);
+	return texture_count++;
+}
+
 int lua_load_texture(lua_State* l) {
-	std::string file = lua_tostring(l, 1);
+	char *file = (char*)lua_tostring(l, 1);
 	unsigned int number = load_texture(file);
 	lua_pushnumber(l, number);
 
@@ -149,14 +183,17 @@ void draw_circle(float x, float y, float w, float h) {
 	float rh = (h*0.5f);
 	int steps = 100;
 	glPushMatrix();
-	glTranslatef(rw, rh, 0.0);
+	glTranslatef(x + rw, y + rh, 0.0);
+	glRotatef(todeg(current_rotation), 0, 0, 1);
 	glBegin(GL_TRIANGLE_FAN);
 	for (int i = 0; i < steps; i++) {
 		float rad = (((float)i / (float)steps) * PI2);
-		glVertex3f(x + (cosf(rad)*rw), y + (sinf(rad)*rh), 0.0f);
+		glVertex3f((cosf(rad)*rw), (sinf(rad)*rh), 0.0f);
 	}
 	glEnd();
 	glPopMatrix();
+
+	current_rotation = 0.0f;
 }
 
 int lua_draw_circle(lua_State* l) {
@@ -171,7 +208,8 @@ int lua_draw_circle(lua_State* l) {
 }
 
 void rotate(float rads) {
-	glRotatef(rads, 0.0f, 0.0f, 1.0f);
+	//glRotatef(rads, 0.0f, 0.0f, 1.0f);
+	current_rotation = rads;
 }
 
 int lua_rotate(lua_State* l) {
