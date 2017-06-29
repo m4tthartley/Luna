@@ -1,5 +1,10 @@
 
-#include "w:/libs/math.c"
+#ifdef _WIN32
+#	include "w:/libs/math.c"
+#endif
+#ifdef __APPLE__
+#	include "/users/matt/documents/libs/math.c"
+#endif
 
 bool enable_dynamic_texture_loading = false;
 struct {

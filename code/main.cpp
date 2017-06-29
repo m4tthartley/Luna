@@ -1,5 +1,10 @@
 
-#include "w:/libs/rain.c"
+#ifdef _WIN32
+#	include "w:/libs/rain.c"
+#endif
+#ifdef __APPLE__
+#	include "/users/matt/documents/libs/rain.c"
+#endif
 
 #include "types.h"
 
@@ -63,7 +68,8 @@ extern "C" {
 
 int main(int argc, char **argv)
 //int CALLBACK WinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd )
-{	
+{
+#if 0
 #ifdef __APPLE__
 	CFBundleRef mainBundle = CFBundleGetMainBundle();
 	CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
@@ -77,6 +83,7 @@ int main(int argc, char **argv)
 	chdir(path);
 	chdir("../../..");
 	//std::cout << "Current Path: " << path << std::endl;
+#endif
 #endif
 
 	Engine engine = Engine();

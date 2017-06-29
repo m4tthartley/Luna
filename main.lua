@@ -1,23 +1,4 @@
 
--- local test = video.loadTexture("test.png")
-
--- function render()
--- 	video.clear()
--- 	--video.renderQuad(100, 100, 100, 100)
-
--- 	video.color(1, 1, 1, 1)
--- 	video.renderSprite(test, 0, 0, 64, 64, 50, 300, 4.0)
-
--- 	video.color(1, 0, 1, 1)
--- 	video.renderElipse(150, 150, 100, 100, 1.3)
--- end
-
--- function tick()
--- end
-
--- function secondstep()
--- end
-
 local test = load_texture("test.png")
 
 function init()
@@ -53,22 +34,23 @@ function update()
 
 	draw_rect_texture(test, 440, 10, 200, 200)
 
-	-- print(mouse.position.x, mouse.position.y)
+	-- print(mouse.position.x, mouse.position.y, mouse.position_delta.x, mouse.position_delta.y)
 	-- print(mouse.position_delta.x, mouse.position_delta.y)
 	-- print(mouse.left.down, mouse.left.pressed, mouse.left.released)
 	-- print(mouse.right.down, mouse.right.pressed, mouse.right.released)
-	-- print(mouse.middle.down, mouse.middle.pressed, mouse.middle.released)
+	-- print(mouse.left.down, mouse.left.pressed, mouse.right.down, mouse.right.pressed, mouse.middle.down, mouse.middle.pressed)
+	-- print(mouse.wheel_delta)
+	--print(keyboard.n2.down, keyboard.n4.down)
 
 	if keyboard.w.pressed then print("W") end
 	if keyboard.a.pressed then print("A") end
 	if keyboard.s.pressed then print("S") end
 	if keyboard.d.pressed then print("D") end
-	-- print(keyboard.n2.down, keyboard.n4.down)
 
 	if keyboard.control.pressed then print("control") end
 	if keyboard.enter.pressed then print("enter") end
 	if keyboard.tab.pressed then print("tab") end
 	if keyboard.shift.pressed then print("shift") end
 
-	print(time.dt, time.seconds)
+	--print(time.dt, time.seconds)
 end

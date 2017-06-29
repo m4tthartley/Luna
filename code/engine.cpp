@@ -95,6 +95,8 @@ struct Engine {
 			lua->set_table_table_bool("mouse", "middle", "pressed", rain.mouse.middle.pressed);
 			lua->set_table_table_bool("mouse", "middle", "released", rain.mouse.middle.released);
 
+			lua->set_table_number("mouse", "wheel_delta", rain.mouse.wheel_delta);
+
 			{
 				lua->set_table_table_digital_button("keyboard", "n1", rain.keys[KEY_1]);
 				lua->set_table_table_digital_button("keyboard", "n2", rain.keys[KEY_2]);
