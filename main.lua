@@ -11,9 +11,9 @@ rotation = 0.0
 function update()
 	rotation = rotation + 0.02
 	rotate(rotation)
-	set_color(1.0, 0.0, 1.0, 1.0)
+	set_color(0.8, 0.5, 1.0, 1.0)
 	draw_rect(10, 10, 100, 100)
-	set_color(0.0, 1.0, 1.0, 1.0)
+	set_color(0.5, 0.0, 0.5, 1.0)
 	draw_rect(120, 10, 100, 100)
 
 	set_color(1.0, 0.0, 0.0, 1.0)
@@ -52,5 +52,5 @@ function update()
 	if keyboard.tab.pressed then print("tab") end
 	if keyboard.shift.pressed then print("shift") end
 
-	--print(time.dt, time.seconds)
+	-- print(time.dt, time.seconds)
 end

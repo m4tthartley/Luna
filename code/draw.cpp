@@ -167,7 +167,7 @@ int _load_texture(char *file) {
 int load_texture(char *file) {
 	GLuint texture = 0;
 	if (enable_dynamic_texture_loading) {
-		GLuint texture = _load_texture(file);
+		texture = _load_texture(file);
 	}
 
 	textures[texture_count].tex = texture;
