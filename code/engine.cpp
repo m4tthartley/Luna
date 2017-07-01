@@ -75,7 +75,14 @@ struct Engine {
 		glLoadIdentity();
 		glClearColor(0, 0, 0, 1);
 
+		init_font_system();
+
+		int test_font = LoadFont("Jellee-Roman.ttf", 1.5f);
 		while (!rain.quit) {
+			float2 size = GetTextDim(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {1, 1}, 300);
+			draw_rect(10, 10, size.x, size.y);
+			_PushFont(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {10, 10}, {4, 4}, {0, 1, 1, 1}, 300);
+			
 			static bool reload_shortcut = false;
 #ifdef _WIN32
 			if (GetAsyncKeyState(VK_CONTROL) && (GetAsyncKeyState('S') || GetAsyncKeyState('R'))) {

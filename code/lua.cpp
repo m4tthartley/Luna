@@ -304,6 +304,10 @@ void Lua::registerTables() {
 	create_lua_func("load_texture", lua_load_texture);
 	create_lua_func("rotate", lua_rotate);
 
+	create_lua_func("draw_font", lua_draw_font);
+	create_lua_func("font_dimensions", lua_font_dimensions);
+	create_lua_func("load_font", lua_load_font);
+
 	// Video
 	/*registerFunction("video", "enableTextures", luaEnableTextures);
 	registerFunction("video", "clear", luaClear);

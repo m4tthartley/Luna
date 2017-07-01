@@ -1,5 +1,6 @@
 
 local test = load_texture("test.png")
+local font = load_font("Jellee-Roman.ttf", 2.0);
 
 function init()
 	window.size = vec2(800, 600)
@@ -34,6 +35,13 @@ function update()
 
 	draw_rect_texture(test, 440, 10, 200, 200)
 
+	local textx, texty = font_dimensions(font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", 300)
+	draw_rect(300, 430, textx, texty)
+	set_color(1, 1, 1, 1)
+	draw_font(font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", 300, 430, 300)
+
+	set_color(1, 1, 1, 1)
+	draw_font(font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", 300, 280, 300)
 
 	-- print(mouse.position.x, mouse.position.y, mouse.position_delta.x, mouse.position_delta.y)
 	-- print(mouse.position_delta.x, mouse.position_delta.y)
