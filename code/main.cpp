@@ -47,7 +47,29 @@ extern "C" {
 #include "videoLua.h"
 #include "videoLua.cpp"
 
+struct FileResult {
+	union {
+		void *data;
+		char *str;
+	};
+	int64 size;
+};
+FileResult load_file(char *file) {
+	FileResult res = {};
+	FILE *f = fopen(file, "rb");
+	if (f) {
+		fseek(f, 0, SEEK_END);
+		res.size = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		res.data = malloc(res.size);
+		fread(res.data, 1, res.size, f);
+		fclose(f);
+	}
+	return res;
+}
+
 #include "draw.cpp"
+#include "font.cpp"
 
 #include "lua.h"
 #include "lua.cpp"
