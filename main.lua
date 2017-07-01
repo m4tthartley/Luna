@@ -34,6 +34,7 @@ function update()
 
 	draw_rect_texture(test, 440, 10, 200, 200)
 
+
 	-- print(mouse.position.x, mouse.position.y, mouse.position_delta.x, mouse.position_delta.y)
 	-- print(mouse.position_delta.x, mouse.position_delta.y)
 	-- print(mouse.left.down, mouse.left.pressed, mouse.left.released)

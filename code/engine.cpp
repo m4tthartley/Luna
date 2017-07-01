@@ -57,6 +57,8 @@ struct Engine {
 		
 		//lua.loadSettings(width, height, viewportScale, fullscreen, title, limitFrames);
 
+		SDL_GL_SetSwapInterval(1);
+		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		//glEnable(GL_DEPTH_TEST);
@@ -91,11 +93,29 @@ struct Engine {
 				reload_shortcut = false;
 			}
 #endif
+#ifdef __APPLE__
+			if ((rain.keys[KEY_CTRL].down || rain.keys[KEY_LGUI].down) && (rain.keys[KEY_S].down || rain.keys[KEY_R].down)) {
+				if (!reload_shortcut) {
+					for (int i = 0; i < texture_count; ++i) {
+						glDeleteTextures(1, &textures[i].tex);
+					}
+					texture_count = 0;
+					lua_close(lua.l);
+					lua = Lua();
+					lua.appFunc("init");
+				}
+				reload_shortcut = true;
+			} else {
+				reload_shortcut = false;
+			}
+#endif
 
+			double time_frame = GetSeconds();
 			rain_update(&rain);
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			double time_lua_state = GetSeconds();
 			lua.set_table_table_number("mouse", "position", "x", rain.mouse.position.x);
 			lua.set_table_table_number("mouse", "position", "y", rain.mouse.position.y);
 			lua.set_table_table_number("mouse", "position_delta", "x", rain.mouse.position_delta.x);
@@ -186,8 +206,14 @@ struct Engine {
 
 			lua.set_table_number("time", "dt", rain.dt);
 			lua.set_table_number("time", "seconds", rain.time_s);
+			time_lua_state = GetSeconds() - time_lua_state;
 
+			double time_lua_update = GetSeconds();
 			lua.appFunc("update");
+			time_lua_update = GetSeconds() - time_lua_update;
+			
+			time_frame = GetSeconds() - time_frame;
+			//printf("time, frame %f, lua state %f, lua update %f \n", time_frame*1000.0, time_lua_state*1000.0, time_lua_update*1000.0);
 		}
 	}
 
