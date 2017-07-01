@@ -3,7 +3,12 @@
 #define STBI_ASSERT(x)
 
 extern "C" {
-	#include "w:/lib/stb_image.h"
+#ifdef _WIN32
+#	include "w:/lib/stb_image.h"
+#endif
+#ifdef __APPLE__
+#	include "../stb_image.h"
+#endif
 }
 
 void videoEnableTextures(bool enable) {
