@@ -8,7 +8,8 @@ public:
 	lua_State* l;
 	bool error;
 
-	Lua();
+	Lua() {};
+	Lua(char *lua_file);
 	void loadSettings(int &width, int &height, double &viewportScale, bool &fullscreen, std::string &title, bool &limitFrames);
 
 	bool get_table_var(char *table, char *var);

@@ -108,7 +108,13 @@ int main(int argc, char **argv)
 #endif
 #endif
 
-	Engine engine = Engine();
+	debug_print("argc %i\n", argc);
+	for (int i = 0; i < argc; ++i) {
+		debug_print("arg %s\n", argv[i]);
+	}
+
+	Engine engine = {};
+	if (argc > 1) engine.default_lua_file = argv[1];
 	engine.run();
 	
 	return 0;

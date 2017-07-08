@@ -21,6 +21,8 @@ struct Engine {
 	bool fullscreen = false;
 	std::string title;
 	bool limitFrames = true;
+
+	char *default_lua_file = "main.lua";
 	
 	std::string luaRender = "render";
 	std::string luaTick = "tick";
@@ -41,11 +43,11 @@ struct Engine {
 
 	Rain rain = {};
 
-	Engine() {
-		lua = Lua();
+	void run() {
+		lua = Lua(default_lua_file);
 		lua.appFunc("init");
-		if (lua.get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua.l, -1);
-		if (lua.get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua.l, -1);
+		/*if (lua.get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua.l, -1);
+		if (lua.get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua.l, -1);*/
 		if (lua.get_table_var("window", "title")) rain.window_title = (char*)lua_tostring(lua.l, -1);
 
 		rain_init(&rain);
@@ -54,11 +56,9 @@ struct Engine {
 		for (int i = 0; i < texture_count; ++i) {
 			textures[i].tex = _load_texture(textures[i].file);
 		}
-		
+
 		//lua.loadSettings(width, height, viewportScale, fullscreen, title, limitFrames);
 
-		SDL_GL_SetSwapInterval(1);
-		
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		//glEnable(GL_DEPTH_TEST);
@@ -77,12 +77,12 @@ struct Engine {
 
 		init_font_system();
 
-//		int test_font = LoadFont("Jellee-Roman.ttf", 1.5f);
+		//		int test_font = LoadFont("Jellee-Roman.ttf", 1.5f);
 		while (!rain.quit) {
-//			float2 size = GetTextDim(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {1, 1}, 300);
-//			draw_rect(10, 10, size.x, size.y);
-//			_PushFont(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {10, 10}, {4, 4}, {0, 1, 1, 1}, 300);
-			
+			//			float2 size = GetTextDim(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {1, 1}, 300);
+			//			draw_rect(10, 10, size.x, size.y);
+			//			_PushFont(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {10, 10}, {4, 4}, {0, 1, 1, 1}, 300);
+
 			static bool reload_shortcut = false;
 #ifdef _WIN32
 			if (GetAsyncKeyState(VK_CONTROL) && (GetAsyncKeyState('S') || GetAsyncKeyState('R'))) {
@@ -92,7 +92,7 @@ struct Engine {
 					}
 					texture_count = 0;
 					lua_close(lua.l);
-					lua = Lua();
+					lua = Lua(default_lua_file);
 					lua.appFunc("init");
 				}
 				reload_shortcut = true;
@@ -121,6 +121,24 @@ struct Engine {
 			rain_update(&rain);
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glViewport(0, 0, rain.window_width, rain.window_height);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+
+			/*glBegin(GL_QUADS);
+			glColor4f(1.0, 0.0, 1.0, 1.0);
+			glVertex2f(-1.0, -1.0);
+			glVertex2f(1.0, -1.0);
+			glVertex2f(1.0, 1.0);
+			glVertex2f(-1.0, 1.0);
+			glEnd();*/
+
+			lua.set_table_table_number("window", "size", "x", rain.window_width);
+			lua.set_table_table_number("window", "size", "y", rain.window_height);
 
 			double time_lua_state = GetSeconds();
 			lua.set_table_table_number("mouse", "position", "x", rain.mouse.position.x);
@@ -218,14 +236,10 @@ struct Engine {
 			double time_lua_update = GetSeconds();
 			lua.appFunc("update");
 			time_lua_update = GetSeconds() - time_lua_update;
-			
+
 			time_frame = GetSeconds() - time_frame;
 			//printf("time, frame %f, lua state %f, lua update %f \n", time_frame*1000.0, time_lua_state*1000.0, time_lua_update*1000.0);
 		}
-	}
-
-	void run() {
-
 	}
 
 #if 0

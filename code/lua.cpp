@@ -22,7 +22,7 @@
 //#include "epic_space_game.h"
 //#include "imvideo.h"
 
-Lua::Lua() {
+Lua::Lua(char *lua_file) {
 
 	error = false;
 
@@ -140,11 +140,11 @@ Lua::Lua() {
 	/*if (luaL_dofile(l, "conf.lua") != 0) error = true;
 	if (lua_type(l, -1) == LUA_TSTRING) std::cout << lua_tostring(l, -1) << std::endl;*/
 
-	std::string mainpath = "main.lua";
-	if (confVar("mainpath")) mainpath = lua_tostring(l, -1);
-	lua_pop(l, 1);
+	//std::string mainpath = "main.lua";
+	//if (confVar("mainpath")) mainpath = lua_tostring(l, -1);
+	//lua_pop(l, 1);
 
-	if (luaL_dofile(l, mainpath.c_str()) != 0) error = true;
+	if (luaL_dofile(l, lua_file) != 0) error = true;
 	if (lua_type(l, -1) == LUA_TSTRING) { std::cout << lua_tostring(l, -1) << std::endl; luaL_dostring(l, "print(debug.traceback)"); std::cout << lua_tostring(l, -1) << std::endl; }
 }
 
