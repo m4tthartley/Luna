@@ -22,12 +22,18 @@
 //#include "epic_space_game.h"
 //#include "imvideo.h"
 
-Lua::Lua(char *lua_file) {
+#define _LUA_BLOCK_ERROR(a, b, c) printf("%s %i %i\n", b, lua_block_top, lua_block_top2);
+#define LUA_BLOCK_ERROR(a, b, c) _LUA_BLOCK_ERROR(a, b, c)
+#define LUA_BLOCK_BEGIN int lua_block_top = lua_gettop(l);
+#define LUA_BLOCK_END int lua_block_top2 = lua_gettop(l); if (lua_block_top!=lua_block_top2) LUA_BLOCK_ERROR(__FILE__, __FUNCTION__, __LINE__)
 
+void Lua::init(char *lua_file) {
 	error = false;
 
 	l = lua_open();
 	luaL_openlibs(l);
+
+	LUA_BLOCK_BEGIN
 
 	luaL_dostring(l,
 		"function vec2(x, y)"
@@ -144,43 +150,68 @@ Lua::Lua(char *lua_file) {
 	//if (confVar("mainpath")) mainpath = lua_tostring(l, -1);
 	//lua_pop(l, 1);
 
-	if (luaL_dofile(l, lua_file) != 0) error = true;
-	if (lua_type(l, -1) == LUA_TSTRING) { std::cout << lua_tostring(l, -1) << std::endl; luaL_dostring(l, "print(debug.traceback)"); std::cout << lua_tostring(l, -1) << std::endl; }
-}
+	// printf("address: %s\n", lua_file);
+	FileResult main_file = get_data_from_address(lua_file);
+	// printf("code: \n%s\n", main_file.str);
 
-bool Lua::confVar(std::string var) {
-
-	lua_getfield(l, LUA_GLOBALSINDEX, "conf");
-	if (lua_istable(l, -1)) {
-		lua_getfield(l, -1, var.c_str());
-		if (!lua_isnil(l, -1)) {
-			return true;
-		}
+	if (luaL_dostring(l, main_file.str) != 0) error = true;
+	// if (luaL_dofile(l, lua_file) != 0) error = true;
+	if (lua_type(l, -1) == LUA_TSTRING) {
+		std::cout << lua_tostring(l, -1) << std::endl;
+		luaL_dostring(l, "print(debug.traceback)");
+		std::cout << lua_tostring(l, -1) << std::endl;
 	}
 
-	return false;
+	LUA_BLOCK_END
 }
 
-bool Lua::get_table_var(char *table, char *var) {
+// bool Lua::confVar(std::string var) {
+
+// 	lua_getfield(l, LUA_GLOBALSINDEX, "conf");
+// 	if (lua_istable(l, -1)) {
+// 		lua_getfield(l, -1, var.c_str());
+// 		if (!lua_isnil(l, -1)) {
+// 			return true;
+// 		}
+// 	}
+
+// 	return false;
+// }
+
+char *Lua::get_table_var(char *table, char *var) {
+	LUA_BLOCK_BEGIN
+
+	char *result = NULL;
 	lua_getfield(l, LUA_GLOBALSINDEX, table);
 	if (lua_istable(l, -1)) {
 		lua_getfield(l, -1, var);
 		if (!lua_isnil(l, -1)) {
-			return true;
+			result = (char*)lua_tostring(l, -1);
 		}
 	}
-	return false;
+
+	lua_pop(l, 2);
+	LUA_BLOCK_END
+
+	return result;
 }
 
 void Lua::set_table_number(char *table, char *var, double num) {
+	LUA_BLOCK_BEGIN
+
 	lua_getfield(l, LUA_GLOBALSINDEX, table);
 	if (lua_istable(l, -1)) {
 		lua_pushnumber(l, num);
 		lua_setfield(l, -2, var);
 	}
+
+	lua_pop(l, 1);
+	LUA_BLOCK_END
 }
 
 void Lua::set_table_table_number(char *table, char *table2, char *var, float num) {
+	LUA_BLOCK_BEGIN
+
 	lua_getfield(l, LUA_GLOBALSINDEX, table);
 	if (lua_istable(l, -1)) {
 		lua_getfield(l, -1, table2);
@@ -189,9 +220,14 @@ void Lua::set_table_table_number(char *table, char *table2, char *var, float num
 			lua_setfield(l, -2, var);
 		}
 	}
+
+	lua_pop(l, 2);
+	LUA_BLOCK_END
 }
 
 void Lua::set_table_table_bool(char *table, char *table2, char *var, bool b) {
+	LUA_BLOCK_BEGIN
+
 	lua_getfield(l, LUA_GLOBALSINDEX, table);
 	if (lua_istable(l, -1)) {
 		lua_getfield(l, -1, table2);
@@ -202,42 +238,58 @@ void Lua::set_table_table_bool(char *table, char *table2, char *var, bool b) {
 	}
 
 	lua_pop(l, 2);
+	LUA_BLOCK_END
 }
 
 void Lua::set_table_table_digital_button(char *table, char *table2, digital_button b) {
+	LUA_BLOCK_BEGIN
+
 	set_table_table_bool(table, table2, "down", b.down);
 	set_table_table_bool(table, table2, "pressed", b.pressed);
 	set_table_table_bool(table, table2, "released", b.released);
+
+	LUA_BLOCK_END
 }
 
 bool Lua::get_table_table_var(char *table, char *table2, char *var) {
+	LUA_BLOCK_BEGIN
+
+	bool result = false;
 	lua_getfield(l, LUA_GLOBALSINDEX, table);
 	if (lua_istable(l, -1)) {
 		lua_getfield(l, -1, table2);
 		if (lua_istable(l, -1)) {
 			lua_getfield(l, -1, var);
 			if (!lua_isnil(l, -1)) {
-				return true;
+				result = true;
 			}
 		}
 	}
-	return false;
+
+	LUA_BLOCK_END
+
+	return result;
 }
 
 bool Lua::appVar(std::string var) {
+	LUA_BLOCK_BEGIN
 
+	bool result = false;
 	lua_getfield(l, LUA_GLOBALSINDEX, "app");
 	if (lua_istable(l, -1)) {
 		lua_getfield(l, -1, var.c_str());
 		if (!lua_isnil(l, -1)) {
-			return true;
+			result = true;
 		}
 	}
 
-	return false;
+	LUA_BLOCK_END
+
+	return result;
 }
 
 void Lua::appSetVar(std::string var, int value) {
+	LUA_BLOCK_BEGIN
 
 	std::string str = var + " = " + std::to_string(value);
 
@@ -246,9 +298,12 @@ void Lua::appSetVar(std::string var, int value) {
 		if (lua_type(l, -1) == LUA_TSTRING) std::cout << lua_tostring(l, -1) << std::endl;
 		error = true;
 	}
+
+	LUA_BLOCK_END
 }
 
 void Lua::appFunc(std::string func) {
+	LUA_BLOCK_BEGIN
 
 	std::string f = func + "()";
 
@@ -259,9 +314,12 @@ void Lua::appFunc(std::string func) {
 		error = true;
 		//luaL_dostring(l, "print(debug.traceback())");
 	}
+
+	LUA_BLOCK_END
 }
 
 void Lua::appFunc(std::string func, int value) {
+	LUA_BLOCK_BEGIN
 
 	std::string f = func + "(" + std::to_string(value) + ")";
 
@@ -271,9 +329,12 @@ void Lua::appFunc(std::string func, int value) {
 		if (lua_type(l, -1) == LUA_TSTRING) std::cout << lua_tostring(l, -1) << std::endl;
 		error = true;
 	}
+
+	LUA_BLOCK_END
 }
 
 void Lua::loadSettings(int &width, int &height, double &viewportScale, bool &fullscreen, std::string &title, bool &limitFrames) {
+	LUA_BLOCK_BEGIN
 
 	if (appVar("width")) width = lua_tonumber(l, -1);
 	if (appVar("height")) height = lua_tonumber(l, -1);
@@ -282,19 +343,29 @@ void Lua::loadSettings(int &width, int &height, double &viewportScale, bool &ful
 
 	if (appVar("title")) title = lua_tostring(l, -1);
 	if (appVar("limitframes")) limitFrames = lua_toboolean(l, -1);
+
+	LUA_BLOCK_END
 }
 
 void Lua::registerTable(std::string tableName, const luaL_reg* functions) {
+	LUA_BLOCK_BEGIN
 
 	luaL_register(l, tableName.c_str(), functions);
+
+	LUA_BLOCK_END
 }
 
 void Lua::create_lua_func(char *name, lua_CFunction func) {
+	LUA_BLOCK_BEGIN
+
 	lua_pushcfunction(l, func);
 	lua_setglobal(l, name);
+
+	LUA_BLOCK_END
 }
 
 void Lua::registerTables() {
+	LUA_BLOCK_BEGIN
 
 	create_lua_func("draw_rect", lua_draw_rect);
 	create_lua_func("set_tex_coords", lua_set_tex_coords);
@@ -379,10 +450,13 @@ void Lua::registerTables() {
 	registerFunction("esg", "endRenderMinimap", lua_end_render_minimap);
 	registerFunction("esg", "initMinimap", lua_init_minimap_fbo);
 #endif
+
+	LUA_BLOCK_END
 }
 
 void Lua::registerFunction (std::string table, std::string function, lua_CFunction func) {
-	
+	LUA_BLOCK_BEGIN
+
 	lua_getfield(l, LUA_GLOBALSINDEX, table.c_str());
 	if(!lua_istable(l, -1)) {
 		
@@ -396,4 +470,6 @@ void Lua::registerFunction (std::string table, std::string function, lua_CFuncti
 	lua_pushcfunction(l, func);
 	lua_settable(l, -3);
 	lua_pop(l, 1);
+
+	LUA_BLOCK_END
 }

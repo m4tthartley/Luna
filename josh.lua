@@ -19,11 +19,11 @@ function update()
   local height = curHeight + easeInOutQuad(curTime) * (endHeight - curHeight)
 
   if state then 
-    endWidth = 100
-    endHeight = 100
-  else 
     endWidth = window.size.x - 40
     endHeight = window.size.y - 40
+  else 
+    endWidth = 100
+    endHeight = 100
   end
 
   if mouse.left.pressed then
@@ -37,7 +37,7 @@ function update()
     end
   end
 
-  set_color(1, 1, 1, 1)
+  set_color(1, 1, 0.6, 1.0)
   draw_rect(20, 20, width, height)
 end
 

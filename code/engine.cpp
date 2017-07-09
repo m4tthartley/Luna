@@ -23,6 +23,7 @@ struct Engine {
 	bool limitFrames = true;
 
 	char *default_lua_file = "main.lua";
+	char *address = "file:main.lua";
 	
 	std::string luaRender = "render";
 	std::string luaTick = "tick";
@@ -44,11 +45,11 @@ struct Engine {
 	Rain rain = {};
 
 	void run() {
-		lua = Lua(default_lua_file);
+		lua.init(address);
 		lua.appFunc("init");
 		/*if (lua.get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua.l, -1);
 		if (lua.get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua.l, -1);*/
-		if (lua.get_table_var("window", "title")) rain.window_title = (char*)lua_tostring(lua.l, -1);
+		rain.window_title = lua.get_table_var("window", "title");
 
 		rain_init(&rain);
 
@@ -108,7 +109,8 @@ struct Engine {
 					}
 					texture_count = 0;
 					lua_close(lua.l);
-					lua = Lua();
+					lua = {};
+					lua.init(address);
 					lua.appFunc("init");
 				}
 				reload_shortcut = true;
