@@ -166,9 +166,8 @@ int main(int argc, char **argv)
 	
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	Engine engine = {};
-	if (argc > 1) engine.address = argv[1];
-	engine.run();
+	if (argc > 1) _engine.address = argv[1];
+	_engine.run();
 	
 	return 0;
 }
