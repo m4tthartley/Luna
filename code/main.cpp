@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 	for (int i = 0; i < argc; ++i) {
 		debug_print("arg %s\n", argv[i]);
 	}
-	
+
 //	CURL *c = curl_easy_init();
 //	curl_easy_setopt(c, CURLOPT_URL, "mattsblog.net/josh.lua");
 //	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);

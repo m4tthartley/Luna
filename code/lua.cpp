@@ -52,7 +52,7 @@ void Lua::init(char *lua_file) {
 
 		"window = {"
 		"	size = vec2(1280, 720),"
-		"	title = \"JellyMoon\","
+		"	title = \"Luna\","
 		"	fullscreen = false,"
 		"}"
 

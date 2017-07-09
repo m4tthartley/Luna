@@ -40,6 +40,9 @@ int lua_draw_rect(lua_State* l) {
 	float width = lua_tonumber(l, 3);
 	float height = lua_tonumber(l, 4);
 
+	// lua_pushstring(l, "Error in draw_rect");
+	// lua_error(l);
+
 	draw_rect(x, y, width, height);
 
 	return 0;
