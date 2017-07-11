@@ -48,6 +48,11 @@ function rand_signed()
 end
 
 function run()
+	print(file_request('josh.lua'))
+	local printlua = loadstring(file_request('print.lua'))
+	-- print("printlua " .. printlua)
+	printlua()
+
 	while true do
 		update()
 		get_input()

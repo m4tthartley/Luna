@@ -318,3 +318,15 @@ int lua_sleep(lua_State *l) {
 
 	return 0;
 }
+
+int lua_file_request(lua_State *l) {
+	char *f = (char*)lua_tostring(l, 1);
+	FileResult file = load_universal_file(f);
+
+	if (file.str) {
+		lua_pushstring(l, file.str);
+		return 1;
+	} else {
+		return 0;
+	}
+}

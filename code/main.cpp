@@ -106,9 +106,20 @@ FileResult load_universal_file(char *file) {
 	char address[256] = {};
 	strcpy(address, _path);
 	strcat(address, file);
-	printf("%s\n", address);
+	// printf("%s\n", address);
 
-	if (_local/*strlen(address) > 5 &&
+	bool local_load = _local;
+	if (file[0] == 'u' &&
+		file[1] == 'r' &&
+		file[2] == 'l' &&
+		file[3] == ':') {
+		file += 4;
+		local_load = false;
+		address[0] = 0;
+		strcpy(address, file);
+	}
+
+	if (local_load/*strlen(address) > 5 &&
 		address[0] == 'f' &&
 		address[1] == 'i' &&
 		address[2] == 'l' &&
@@ -182,10 +193,10 @@ int main(int argc, char **argv)
 #endif
 #endif
 
-	debug_print("argc %i\n", argc);
-	for (int i = 0; i < argc; ++i) {
-		debug_print("arg %s\n", argv[i]);
-	}
+	// debug_print("argc %i\n", argc);
+	// for (int i = 0; i < argc; ++i) {
+	// 	debug_print("arg %s\n", argv[i]);
+	// }
 
 //	CURL *c = curl_easy_init();
 //	curl_easy_setopt(c, CURLOPT_URL, "mattsblog.net/josh.lua");
@@ -200,14 +211,23 @@ int main(int argc, char **argv)
 #endif
 
 	if (argc > 1) _address = argv[1];
-	if (strlen(_address) > 5 &&
-		_address[0] == 'f' &&
-		_address[1] == 'i' &&
-		_address[2] == 'l' &&
-		_address[3] == 'e' &&
-		_address[4] == ':') {
-		_address += 5;
+	// if (strlen(_address) > 5 &&
+	// 	_address[0] == 'f' &&
+	// 	_address[1] == 'i' &&
+	// 	_address[2] == 'l' &&
+	// 	_address[3] == 'e' &&
+	// 	_address[4] == ':') {
+	// 	_address += 5;
+	// 	_local = true;
+	// }
+
+	// if (access(_address, F_OK)) {
+	// 	_local = true;
+	// }
+	FILE *temp_file = fopen(_address, "r");
+	if (temp_file) {
 		_local = true;
+		fclose(temp_file);
 	}
 
 	for (int i = strlen(_address); i >= 0; --i) {
@@ -221,7 +241,9 @@ int main(int argc, char **argv)
 
 	// printf("%s\n%s\n", path, _address);
 
+	printf("\n");
 	_engine.run();
+	printf("\n");
 	
 	return 0;
 }
