@@ -29,9 +29,10 @@ end
 
 local particles = {}
 local counter = 0
-local size = 40
+local size = 4
 
 local font = load_font("jellee.ttf", 1.5)
+local image = load_texture("kitten2.jpg")
 
 function particle(p, c, s)
 	return {
@@ -52,7 +53,7 @@ function run()
 		get_input()
 
 		local speed_mul = 1.0
-		local spawn_speed = 0.025
+		local spawn_speed = 1.0
 
 		for i,p in ipairs(particles) do
 			p.life = p.life - (10.0 * time.dt)
@@ -83,39 +84,39 @@ function run()
 				p.speed:mul(vec2(0.9, -0.75))
 			end
 
-			for j,p2 in ipairs(particles) do
-				if i ~= j then
-					-- if vec_sub(p.pos, p2.pos):len() < 10.0 then
-						if p.pos.x + size > p2.pos.x and
-						   p.pos.y + size > p2.pos.y and
-						   p.pos.x < p2.pos.x + size and
-						   p.pos.y < p2.pos.y + size then
-							local x1 = (p.pos.x + size) - p2.pos.x
-							local x2 = (p2.pos.x + size) - p.pos.x
-							local y1 = (p.pos.y + size) - p2.pos.y
-							local y2 = (p2.pos.y + size) - p.pos.y
-							local min = math.min(x1, x2, y1, y2)
-							if min == x1 then
-								p.pos.x = p2.pos.x - size
-								p.speed:mul(vec2(-0.75, 0.9))
-								p2.speed:mul(vec2(-0.75, 0.9))
-							elseif min == x2 then
-								p.pos.x = p2.pos.x + size
-								p.speed:mul(vec2(-0.75, 0.9))
-								p2.speed:mul(vec2(-0.75, 0.9))
-							elseif min == y1 then
-								p.pos.y = p2.pos.y - size
-								p.speed:mul(vec2(0.9, -0.75))
-								p2.speed:mul(vec2(0.9, -0.75))
-							elseif min == y2 then
-								p.pos.y = p2.pos.y + size
-								p.speed:mul(vec2(0.9, -0.75))
-								p2.speed:mul(vec2(0.9, -0.75))
-							end
-						end
-					-- end
-				end
-			end
+			-- for j,p2 in ipairs(particles) do
+			-- 	if i ~= j then
+			-- 		-- if vec_sub(p.pos, p2.pos):len() < 10.0 then
+			-- 			if p.pos.x + size > p2.pos.x and
+			-- 			   p.pos.y + size > p2.pos.y and
+			-- 			   p.pos.x < p2.pos.x + size and
+			-- 			   p.pos.y < p2.pos.y + size then
+			-- 				local x1 = (p.pos.x + size) - p2.pos.x
+			-- 				local x2 = (p2.pos.x + size) - p.pos.x
+			-- 				local y1 = (p.pos.y + size) - p2.pos.y
+			-- 				local y2 = (p2.pos.y + size) - p.pos.y
+			-- 				local min = math.min(x1, x2, y1, y2)
+			-- 				if min == x1 then
+			-- 					p.pos.x = p2.pos.x - size
+			-- 					p.speed:mul(vec2(-0.75, 0.9))
+			-- 					p2.speed:mul(vec2(-0.75, 0.9))
+			-- 				elseif min == x2 then
+			-- 					p.pos.x = p2.pos.x + size
+			-- 					p.speed:mul(vec2(-0.75, 0.9))
+			-- 					p2.speed:mul(vec2(-0.75, 0.9))
+			-- 				elseif min == y1 then
+			-- 					p.pos.y = p2.pos.y - size
+			-- 					p.speed:mul(vec2(0.9, -0.75))
+			-- 					p2.speed:mul(vec2(0.9, -0.75))
+			-- 				elseif min == y2 then
+			-- 					p.pos.y = p2.pos.y + size
+			-- 					p.speed:mul(vec2(0.9, -0.75))
+			-- 					p2.speed:mul(vec2(0.9, -0.75))
+			-- 				end
+			-- 			end
+			-- 		-- end
+			-- 	end
+			-- end
 
 			set_color(p.color.x, p.color.y, p.color.z, 1.0)
 			draw_rect(p.pos.x, p.pos.y, size, size)
@@ -135,6 +136,9 @@ function run()
 
 		set_color(1.0, 1.0, 1.0, 1.0)
 		draw_font(font, "particles " .. #particles, 10, 0)
+
+		set_tex_coords(0, 0, 1, 0, 1, 1, 0, 1)
+		draw_rect_texture(image, 10, 100, 600, 400)
 
 		swap_buffers()
 	end
