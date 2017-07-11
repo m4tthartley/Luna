@@ -9,6 +9,10 @@ end
 
 rotation = 0.0
 
+function rectangle(pos, size)
+	draw_rect(pos.x, pos.y, size.x, size.y)
+end
+
 function update()
 	rotation = rotation + 0.02
 	rotate(rotation)
