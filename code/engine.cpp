@@ -22,8 +22,7 @@ struct Engine {
 	std::string title;
 	bool limitFrames = true;
 
-	char *default_lua_file = "main.lua";
-	char *address = "file:main.lua";
+	// char *default_lua_file = "main.lua";
 
 	bool reload = false;
 
@@ -41,7 +40,7 @@ struct Engine {
 	Rain rain = {};
 
 	void run() {
-		lua.init(address);
+		lua.init(_address);
 		lua.appFunc("init");
 		/*if (lua.get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua.l, -1);
 		if (lua.get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua.l, -1);*/
@@ -82,7 +81,7 @@ struct Engine {
 				texture_count = 0;
 				lua_close(lua.l);
 				lua = {};
-				lua.init(address);
+				lua.init(_address);
 				lua.appFunc("init");
 				reload = false;
 			}
@@ -165,7 +164,7 @@ int lua_update(lua_State* l) {
 	}
 #endif
 #ifdef __APPLE__
-	if ((_engine.rain.keys[KEY_CTRL].down || _engine.rain.keys[KEY_LGUI].down) && (_engine.rain.keys[KEY_S].down || _engine.rain.keys[KEY_R].down)) {
+	if ((_engine.rain.keys[KEY_CTRL].down || _engine.rain.keys[KEY_LGUI].down) && (_engine.rain.keys[KEY_S].pressed || _engine.rain.keys[KEY_R].pressed)) {
 		if (!reload_shortcut) {
 			// for (int i = 0; i < texture_count; ++i) {
 			// 	glDeleteTextures(1, &textures[i].tex);

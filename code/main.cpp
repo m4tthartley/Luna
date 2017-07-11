@@ -79,8 +79,11 @@ FileResult load_file(char *file) {
 	return res;
 }
 
-CURL *c = NULL;
+bool _local = false;
+char *_address = "file:main.lua";
+char _path[256];
 
+CURL *c = NULL;
 char _file_buffer[1024*1024];
 int _file_buffer_size = 0;
 size_t curl_data_write(void *buffer, size_t size, size_t nmemb, void *user) {
@@ -90,17 +93,22 @@ size_t curl_data_write(void *buffer, size_t size, size_t nmemb, void *user) {
 	_file_buffer_size += s;
 	return s;
 }
-FileResult get_data_from_address(char *address) {
+FileResult load_universal_file(char *file) {
 	memset(_file_buffer, 0, _file_buffer_size);
 	_file_buffer_size = 0;
 	
-	if (strlen(address) > 5 &&
+	char address[256] = {};
+	strcpy(address, _path);
+	strcat(address, file);
+	printf("%s\n", address);
+
+	if (_local/*strlen(address) > 5 &&
 		address[0] == 'f' &&
 		address[1] == 'i' &&
 		address[2] == 'l' &&
 		address[3] == 'e' &&
-		address[4] == ':') {
-		address += 5;
+		address[4] == ':'*/) {
+		// address += 5;
 		return load_file(address);
 	} else {
 		if (!c) c = curl_easy_init();
@@ -166,7 +174,28 @@ int main(int argc, char **argv)
 	
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	if (argc > 1) _engine.address = argv[1];
+	if (argc > 1) _address = argv[1];
+	if (strlen(_address) > 5 &&
+		_address[0] == 'f' &&
+		_address[1] == 'i' &&
+		_address[2] == 'l' &&
+		_address[3] == 'e' &&
+		_address[4] == ':') {
+		_address += 5;
+		_local = true;
+	}
+
+	for (int i = strlen(_address); i >= 0; --i) {
+		if (_address[i] == '/') {
+			memcpy(_path, _address, i+1);
+			_path[i+1] = 0;
+			_address += i+1;
+			break;
+		}
+	}
+
+	// printf("%s\n%s\n", path, _address);
+
 	_engine.run();
 	
 	return 0;

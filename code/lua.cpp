@@ -151,7 +151,7 @@ void Lua::init(char *lua_file) {
 	//lua_pop(l, 1);
 
 	// printf("address: %s\n", lua_file);
-	FileResult main_file = get_data_from_address(lua_file);
+	FileResult main_file = load_universal_file(lua_file);
 	// printf("code: \n%s\n", main_file.str);
 
 	if (luaL_dostring(l, main_file.str) != 0) error = true;

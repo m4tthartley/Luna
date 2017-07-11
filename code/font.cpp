@@ -65,9 +65,8 @@ int LoadFont(char *File, float scale)
 	// Font.BitmapScale = 1.0f;
 	// Font.RenderScale = 1.0f / Font.BitmapScale;
 
-	// file_data FontFile = FileRead(File);
-	//data_t fontData = LoadFromAssetPack(platform, assets, File);
-	FileResult f = load_file(File);
+	// FileResult f = load_file(File);
+	FileResult f = load_universal_file(File);
 
 	if (f.data) {
 		stbtt_InitFont(&font->STBFontInfo, (unsigned char*)f.data, stbtt_GetFontOffsetForIndex((unsigned char*)f.data, 0));
