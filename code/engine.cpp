@@ -22,13 +22,9 @@ struct Engine {
 	std::string title;
 	bool limitFrames = true;
 
-	char *default_lua_file = "main.lua";
-	
-	std::string luaRender = "render";
-	std::string luaTick = "tick";
-	std::string luaKeyDown = "keyDown";
-	std::string luaKeyUp = "keyUp";
-	std::string luaMouseDown = "mouseDown";
+	// char *default_lua_file = "main.lua";
+
+	bool reload = false;
 
 	/*Engine();
 	void run();
@@ -44,11 +40,11 @@ struct Engine {
 	Rain rain = {};
 
 	void run() {
-		lua = Lua(default_lua_file);
+		lua.init(_address);
 		lua.appFunc("init");
 		/*if (lua.get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua.l, -1);
 		if (lua.get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua.l, -1);*/
-		if (lua.get_table_var("window", "title")) rain.window_title = (char*)lua_tostring(lua.l, -1);
+		rain.window_title = lua.get_table_var("window", "title");
 
 		rain_init(&rain);
 
@@ -74,60 +70,40 @@ struct Engine {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glClearColor(0, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		init_font_system();
 
+		do {
+			if (reload) {
+				for (int i = 0; i < texture_count; ++i) {
+					glDeleteTextures(1, &textures[i].tex);
+				}
+				texture_count = 0;
+				lua_close(lua.l);
+				lua = {};
+				lua.init(_address);
+				lua.appFunc("init");
+				reload = false;
+			}
+			lua.appFunc("run");
+		} while (reload);
+
+#if 0
 		//		int test_font = LoadFont("Jellee-Roman.ttf", 1.5f);
 		while (!rain.quit) {
 			//			float2 size = GetTextDim(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {1, 1}, 300);
 			//			draw_rect(10, 10, size.x, size.y);
 			//			_PushFont(test_font, "Hello, I'm testing the sweet fonts. Do you like my sweet ass fonts?", {10, 10}, {4, 4}, {0, 1, 1, 1}, 300);
 
-			static bool reload_shortcut = false;
-#ifdef _WIN32
-			if (GetAsyncKeyState(VK_CONTROL) && (GetAsyncKeyState('S') || GetAsyncKeyState('R'))) {
-				if (!reload_shortcut) {
-					for (int i = 0; i < texture_count; ++i) {
-						glDeleteTextures(1, &textures[i].tex);
-					}
-					texture_count = 0;
-					lua_close(lua.l);
-					lua = Lua(default_lua_file);
-					lua.appFunc("init");
-				}
-				reload_shortcut = true;
-			} else {
-				reload_shortcut = false;
-			}
-#endif
-#ifdef __APPLE__
-			if ((rain.keys[KEY_CTRL].down || rain.keys[KEY_LGUI].down) && (rain.keys[KEY_S].down || rain.keys[KEY_R].down)) {
-				if (!reload_shortcut) {
-					for (int i = 0; i < texture_count; ++i) {
-						glDeleteTextures(1, &textures[i].tex);
-					}
-					texture_count = 0;
-					lua_close(lua.l);
-					lua = Lua();
-					lua.appFunc("init");
-				}
-				reload_shortcut = true;
-			} else {
-				reload_shortcut = false;
-			}
-#endif
+
 
 			double time_frame = GetSeconds();
-			rain_update(&rain);
+			// rain_update(&rain);
 
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			
 
-			glViewport(0, 0, rain.window_width, rain.window_height);
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
+			
 
 			/*glBegin(GL_QUADS);
 			glColor4f(1.0, 0.0, 1.0, 1.0);
@@ -137,101 +113,7 @@ struct Engine {
 			glVertex2f(-1.0, 1.0);
 			glEnd();*/
 
-			lua.set_table_table_number("window", "size", "x", rain.window_width);
-			lua.set_table_table_number("window", "size", "y", rain.window_height);
-
-			double time_lua_state = GetSeconds();
-			lua.set_table_table_number("mouse", "position", "x", rain.mouse.position.x);
-			lua.set_table_table_number("mouse", "position", "y", rain.mouse.position.y);
-			lua.set_table_table_number("mouse", "position_delta", "x", rain.mouse.position_delta.x);
-			lua.set_table_table_number("mouse", "position_delta", "y", rain.mouse.position_delta.y);
-
-			lua.set_table_table_bool("mouse", "left", "down", rain.mouse.left.down);
-			lua.set_table_table_bool("mouse", "left", "pressed", rain.mouse.left.pressed);
-			lua.set_table_table_bool("mouse", "left", "released", rain.mouse.left.released);
-
-			lua.set_table_table_bool("mouse", "right", "down", rain.mouse.right.down);
-			lua.set_table_table_bool("mouse", "right", "pressed", rain.mouse.right.pressed);
-			lua.set_table_table_bool("mouse", "right", "released", rain.mouse.right.released);
-
-			lua.set_table_table_bool("mouse", "middle", "down", rain.mouse.middle.down);
-			lua.set_table_table_bool("mouse", "middle", "pressed", rain.mouse.middle.pressed);
-			lua.set_table_table_bool("mouse", "middle", "released", rain.mouse.middle.released);
-
-			lua.set_table_number("mouse", "wheel_delta", rain.mouse.wheel_delta);
-
-			{
-				lua.set_table_table_digital_button("keyboard", "n1", rain.keys[KEY_1]);
-				lua.set_table_table_digital_button("keyboard", "n2", rain.keys[KEY_2]);
-				lua.set_table_table_digital_button("keyboard", "n3", rain.keys[KEY_3]);
-				lua.set_table_table_digital_button("keyboard", "n4", rain.keys[KEY_4]);
-				lua.set_table_table_digital_button("keyboard", "n5", rain.keys[KEY_5]);
-				lua.set_table_table_digital_button("keyboard", "n6", rain.keys[KEY_6]);
-				lua.set_table_table_digital_button("keyboard", "n7", rain.keys[KEY_7]);
-				lua.set_table_table_digital_button("keyboard", "n8", rain.keys[KEY_8]);
-				lua.set_table_table_digital_button("keyboard", "n9", rain.keys[KEY_9]);
-				lua.set_table_table_digital_button("keyboard", "n0", rain.keys[KEY_0]);
-				lua.set_table_table_digital_button("keyboard", "a", rain.keys[KEY_A]);
-				lua.set_table_table_digital_button("keyboard", "b", rain.keys[KEY_B]);
-				lua.set_table_table_digital_button("keyboard", "c", rain.keys[KEY_C]);
-				lua.set_table_table_digital_button("keyboard", "d", rain.keys[KEY_D]);
-				lua.set_table_table_digital_button("keyboard", "e", rain.keys[KEY_E]);
-				lua.set_table_table_digital_button("keyboard", "f", rain.keys[KEY_F]);
-				lua.set_table_table_digital_button("keyboard", "g", rain.keys[KEY_G]);
-				lua.set_table_table_digital_button("keyboard", "h", rain.keys[KEY_H]);
-				lua.set_table_table_digital_button("keyboard", "i", rain.keys[KEY_I]);
-				lua.set_table_table_digital_button("keyboard", "j", rain.keys[KEY_J]);
-				lua.set_table_table_digital_button("keyboard", "k", rain.keys[KEY_K]);
-				lua.set_table_table_digital_button("keyboard", "l", rain.keys[KEY_L]);
-				lua.set_table_table_digital_button("keyboard", "m", rain.keys[KEY_M]);
-				lua.set_table_table_digital_button("keyboard", "n", rain.keys[KEY_N]);
-				lua.set_table_table_digital_button("keyboard", "o", rain.keys[KEY_O]);
-				lua.set_table_table_digital_button("keyboard", "p", rain.keys[KEY_P]);
-				lua.set_table_table_digital_button("keyboard", "q", rain.keys[KEY_Q]);
-				lua.set_table_table_digital_button("keyboard", "r", rain.keys[KEY_R]);
-				lua.set_table_table_digital_button("keyboard", "s", rain.keys[KEY_S]);
-				lua.set_table_table_digital_button("keyboard", "t", rain.keys[KEY_T]);
-				lua.set_table_table_digital_button("keyboard", "u", rain.keys[KEY_U]);
-				lua.set_table_table_digital_button("keyboard", "v", rain.keys[KEY_V]);
-				lua.set_table_table_digital_button("keyboard", "w", rain.keys[KEY_W]);
-				lua.set_table_table_digital_button("keyboard", "x", rain.keys[KEY_X]);
-				lua.set_table_table_digital_button("keyboard", "y", rain.keys[KEY_Y]);
-				lua.set_table_table_digital_button("keyboard", "z", rain.keys[KEY_Z]);
-
-				lua.set_table_table_digital_button("keyboard", "left", rain.keys[KEY_LEFT]);
-				lua.set_table_table_digital_button("keyboard", "right", rain.keys[KEY_RIGHT]);
-				lua.set_table_table_digital_button("keyboard", "up", rain.keys[KEY_UP]);
-				lua.set_table_table_digital_button("keyboard", "down", rain.keys[KEY_DOWN]);
-				lua.set_table_table_digital_button("keyboard", "lcontrol", rain.keys[KEY_LCTRL]);
-				lua.set_table_table_digital_button("keyboard", "rcontrol", rain.keys[KEY_RCTRL]);
-				lua.set_table_table_digital_button("keyboard", "control", rain.keys[KEY_CTRL]);
-				lua.set_table_table_digital_button("keyboard", "lshift", rain.keys[KEY_LSHIFT]);
-				lua.set_table_table_digital_button("keyboard", "rshift", rain.keys[KEY_RSHIFT]);
-				lua.set_table_table_digital_button("keyboard", "shift", rain.keys[KEY_SHIFT]);
-				lua.set_table_table_digital_button("keyboard", "alt", rain.keys[KEY_ALT]);
-				lua.set_table_table_digital_button("keyboard", "caps", rain.keys[KEY_CAPS]);
-				lua.set_table_table_digital_button("keyboard", "tab", rain.keys[KEY_TAB]);
-				lua.set_table_table_digital_button("keyboard", "space", rain.keys[KEY_SPACE]);
-				lua.set_table_table_digital_button("keyboard", "enter", rain.keys[KEY_RETURN]);
-				lua.set_table_table_digital_button("keyboard", "backspace", rain.keys[KEY_BACKSPACE]);
-				lua.set_table_table_digital_button("keyboard", "escape", rain.keys[KEY_ESCAPE]);
-				lua.set_table_table_digital_button("keyboard", "f1", rain.keys[KEY_F1]);
-				lua.set_table_table_digital_button("keyboard", "f2", rain.keys[KEY_F2]);
-				lua.set_table_table_digital_button("keyboard", "f3", rain.keys[KEY_F3]);
-				lua.set_table_table_digital_button("keyboard", "f4", rain.keys[KEY_F4]);
-				lua.set_table_table_digital_button("keyboard", "f5", rain.keys[KEY_F5]);
-				lua.set_table_table_digital_button("keyboard", "f6", rain.keys[KEY_F6]);
-				lua.set_table_table_digital_button("keyboard", "f7", rain.keys[KEY_F7]);
-				lua.set_table_table_digital_button("keyboard", "f8", rain.keys[KEY_F8]);
-				lua.set_table_table_digital_button("keyboard", "f9", rain.keys[KEY_F9]);
-				lua.set_table_table_digital_button("keyboard", "f10", rain.keys[KEY_F10]);
-				lua.set_table_table_digital_button("keyboard", "f11", rain.keys[KEY_F11]);
-				lua.set_table_table_digital_button("keyboard", "f12", rain.keys[KEY_F12]);
-			}
-
-			lua.set_table_number("time", "dt", rain.dt);
-			lua.set_table_number("time", "seconds", rain.time_s);
-			time_lua_state = GetSeconds() - time_lua_state;
+			
 
 			double time_lua_update = GetSeconds();
 			lua.appFunc("update");
@@ -240,204 +122,190 @@ struct Engine {
 			time_frame = GetSeconds() - time_frame;
 			//printf("time, frame %f, lua state %f, lua update %f \n", time_frame*1000.0, time_lua_state*1000.0, time_lua_update*1000.0);
 		}
+#endif
 	}
 
-#if 0
-	void printVersionInfo() {
+	/*void printVersionInfo() {
 
 		SDL_version sdlVersion;
 		SDL_GetVersion(&sdlVersion);
 		std::cout << "sdl version(" << std::to_string(sdlVersion.major) <<
 			" " << std::to_string(sdlVersion.minor) << ")" << std::endl;
 		std::cout << "gl(" << glGetString(GL_VERSION) << ") glsl(" << glGetString(GL_SHADING_LANGUAGE_VERSION) << ")" << std::endl;
-	}
-
-	Engine() {
-
-		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-			std::cout << SDL_GetError() << std::endl;
-			return;
-		}
-
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-		window = SDL_CreateWindow("Hello World", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 720, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
-		if (window == nullptr) {
-			std::cout << SDL_GetError() << std::endl;
-			return;
-		}
-
-		// Audio::init();
-
-		glContext = SDL_GL_CreateContext(window);
-		//printVersionInfo();
-
-#ifdef _WIN32
-		//glewInit();
-#endif
-		//std::cout << "glsl " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-		//	int majorVersion;
-		//	int minorVersion;
-		//	SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &majorVersion);
-		//	SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minorVersion);
-		//	std::cout << majorVersion << " " << minorVersion << std::endl;
-
-		//Video2::init();
-		//Video3::init();
-		//Shader::compileDefault();
-
-		lua = new Lua();
-		lua.loadSettings(width, height, viewportScale, fullscreen, title, limitFrames);
-	}
-
-	void run() {
-		SDL_SetMainReady();
-
-		SDL_SetWindowTitle(window, title.c_str());
-		SDL_SetWindowSize(window, (int)(width*viewportScale), (int)(height*viewportScale));
-		SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-		if (fullscreen) SDL_SetWindowFullscreen(window, SDL_TRUE);
-		SDL_GetDesktopDisplayMode(0, &desktopDisplayMode);
-		//std::cout << desktopDisplayMode.w << " " << desktopDisplayMode.h << std::endl;
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		//glEnable(GL_DEPTH_TEST);
-
-		glAlphaFunc(GL_GREATER, 0.1f);
-		glEnable(GL_ALPHA_TEST);
-
-		bool quit = false;
-		SDL_Event e;
-
-		glViewport(0, 0, (int)(width*viewportScale), (int)(height*viewportScale));
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, width, height, 0, -100, 100);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glClearColor(0, 0, 0, 1);
-		if (!limitFrames) SDL_GL_SetSwapInterval(0);
-
-		double time = this->time();
-		double tickTime = this->time();
-		int frames = 0;
-		int ticks = 0;
-		double msPerTick = (double)1000.0 / 60.0;
-		double unprocessed = 0.0;
-
-		while (!quit) {
-
-			while (SDL_PollEvent(&e)) {
-
-				if (e.type == SDL_QUIT) quit = true;
-
-				if (e.type == SDL_KEYDOWN) {
-					lua.appFunc(luaKeyDown, e.key.keysym.scancode);
-
-					if (e.key.keysym.scancode == SDL_SCANCODE_F11) {
-						if (!fullscreen) {
-							fullscreen = true;
-							//SDL_SetWindowSize(window, desktopDisplayMode.w, desktopDisplayMode.h);
-							if (SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP) != 0) std::cout << SDL_GetError();
-							glViewport(0, 0, desktopDisplayMode.w, desktopDisplayMode.h);
-						} else if (fullscreen) {
-							fullscreen = false;
-							if (SDL_SetWindowFullscreen(window, 0) != 0) std::cout << SDL_GetError();
-							glViewport(0, 0, (int)(width*viewportScale), (int)(height*viewportScale));
-							//SDL_SetWindowSize(window, width*viewportScale, height*viewportScale);
-						}
-					}
-				}
-
-				if (e.type == SDL_KEYUP) lua.appFunc(luaKeyUp, e.key.keysym.scancode);
-
-				if (e.type == SDL_MOUSEBUTTONDOWN) {
-					if (e.button.button == SDL_BUTTON_LEFT) lua.appFunc(luaMouseDown, 0);
-					if (e.button.button == SDL_BUTTON_RIGHT) lua.appFunc(luaMouseDown, 1);
-				}
-
-				if (e.type == SDL_MOUSEMOTION) {
-					mousex = e.motion.x;
-					mousey = e.motion.y;
-				}
-			}
-
-			if (!lua.error) {
-
-				/*if (this->time() - time > 1000.0) {
-					fps = frames;
-					tps = ticks;
-					frames = 0;
-					ticks = 0;
-					time = this->time();
-					lua.appFunc("secondstep");
-				}
-
-				unprocessed += (this->time() - tickTime) / msPerTick;
-				tickTime = this->time();
-
-				while (unprocessed >= 1.0) {
-					unprocessed--;
-					lua.appFunc(luaTick);
-					ticks++;
-				}*/
-
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-				lua.appFunc(luaRender);
-				frames++;
-				SDL_GL_SwapWindow(window);
-				qps = 0;
-			}
-		}
-
-		SDL_DestroyWindow(window);
-		SDL_Quit();
-	}
-#endif
-
-	/*int time() {
-
-		return SDL_GetTicks();
 	}*/
-
-	int getMousex(lua_State* l) {
-
-		lua_pushnumber(l, mousex);
-		return 1;
-	}
-
-	int getMousey(lua_State* l) {
-
-		lua_pushnumber(l, mousey);
-		return 1;
-	}
-
-	int getFrames(lua_State* l) {
-
-		lua_pushnumber(l, fps);
-		return 1;
-	}
-
-	int getTicks(lua_State* l) {
-
-		lua_pushnumber(l, tps);
-		return 1;
-	}
-
-	int getQps(lua_State *l) {
-
-		lua_pushnumber(l, qps);
-		return 1;
-	}
-
 };
+
+Engine _engine;
+
+int lua_update(lua_State* l) {
+	rain_poll_input(&_engine.rain);
+	rain_poll_time(&_engine.rain);
+
+	if (_engine.rain.quit) {
+		// Force the lua run loop to quit
+		lua_pushstring(_engine.lua.l, "Quitting program...");
+		lua_error(_engine.lua.l);
+	}
+
+	static bool reload_shortcut = false;
+#ifdef _WIN32
+	if (GetAsyncKeyState(VK_CONTROL) && (GetAsyncKeyState('S') || GetAsyncKeyState('R'))) {
+		if (!reload_shortcut) {
+			for (int i = 0; i < texture_count; ++i) {
+				glDeleteTextures(1, &textures[i].tex);
+			}
+			texture_count = 0;
+			lua_close(lua.l);
+			lua = Lua(default_lua_file);
+			lua.appFunc("init");
+		}
+		reload_shortcut = true;
+	} else {
+		reload_shortcut = false;
+	}
+#endif
+#ifdef __APPLE__
+	if ((_engine.rain.keys[KEY_CTRL].down || _engine.rain.keys[KEY_LGUI].down) && (_engine.rain.keys[KEY_S].pressed || _engine.rain.keys[KEY_R].pressed)) {
+		if (!reload_shortcut) {
+			// for (int i = 0; i < texture_count; ++i) {
+			// 	glDeleteTextures(1, &textures[i].tex);
+			// }
+			// texture_count = 0;
+			// lua_close(lua.l);
+			// lua = {};
+			// lua.init(address);
+			// lua.appFunc("init");
+			_engine.reload = true;
+			lua_pushstring(_engine.lua.l, "reloading...");
+			lua_error(_engine.lua.l);
+		}
+		reload_shortcut = true;
+	} else {
+		reload_shortcut = false;
+	}
+#endif
+
+	glViewport(0, 0, _engine.rain.window_width, _engine.rain.window_height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, _engine.rain.window_width, _engine.rain.window_height, 0, -100, 100);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+	return 0;
+}
+
+int lua_get_input(lua_State* l) {
+	_engine.lua.set_table_table_number("window", "size", "x", _engine.rain.window_width);
+	_engine.lua.set_table_table_number("window", "size", "y", _engine.rain.window_height);
+
+	double time_lua_state = GetSeconds();
+	_engine.lua.set_table_table_number("mouse", "position", "x", _engine.rain.mouse.position.x);
+	_engine.lua.set_table_table_number("mouse", "position", "y", _engine.rain.mouse.position.y);
+	_engine.lua.set_table_table_number("mouse", "position_delta", "x", _engine.rain.mouse.position_delta.x);
+	_engine.lua.set_table_table_number("mouse", "position_delta", "y", _engine.rain.mouse.position_delta.y);
+
+	_engine.lua.set_table_table_bool("mouse", "left", "down", _engine.rain.mouse.left.down);
+	_engine.lua.set_table_table_bool("mouse", "left", "pressed", _engine.rain.mouse.left.pressed);
+	_engine.lua.set_table_table_bool("mouse", "left", "released", _engine.rain.mouse.left.released);
+
+	_engine.lua.set_table_table_bool("mouse", "right", "down", _engine.rain.mouse.right.down);
+	_engine.lua.set_table_table_bool("mouse", "right", "pressed", _engine.rain.mouse.right.pressed);
+	_engine.lua.set_table_table_bool("mouse", "right", "released", _engine.rain.mouse.right.released);
+
+	_engine.lua.set_table_table_bool("mouse", "middle", "down", _engine.rain.mouse.middle.down);
+	_engine.lua.set_table_table_bool("mouse", "middle", "pressed", _engine.rain.mouse.middle.pressed);
+	_engine.lua.set_table_table_bool("mouse", "middle", "released", _engine.rain.mouse.middle.released);
+
+	_engine.lua.set_table_number("mouse", "wheel_delta", _engine.rain.mouse.wheel_delta);
+
+	{
+		_engine.lua.set_table_table_digital_button("keyboard", "n1", _engine.rain.keys[KEY_1]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n2", _engine.rain.keys[KEY_2]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n3", _engine.rain.keys[KEY_3]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n4", _engine.rain.keys[KEY_4]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n5", _engine.rain.keys[KEY_5]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n6", _engine.rain.keys[KEY_6]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n7", _engine.rain.keys[KEY_7]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n8", _engine.rain.keys[KEY_8]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n9", _engine.rain.keys[KEY_9]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n0", _engine.rain.keys[KEY_0]);
+		_engine.lua.set_table_table_digital_button("keyboard", "a", _engine.rain.keys[KEY_A]);
+		_engine.lua.set_table_table_digital_button("keyboard", "b", _engine.rain.keys[KEY_B]);
+		_engine.lua.set_table_table_digital_button("keyboard", "c", _engine.rain.keys[KEY_C]);
+		_engine.lua.set_table_table_digital_button("keyboard", "d", _engine.rain.keys[KEY_D]);
+		_engine.lua.set_table_table_digital_button("keyboard", "e", _engine.rain.keys[KEY_E]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f", _engine.rain.keys[KEY_F]);
+		_engine.lua.set_table_table_digital_button("keyboard", "g", _engine.rain.keys[KEY_G]);
+		_engine.lua.set_table_table_digital_button("keyboard", "h", _engine.rain.keys[KEY_H]);
+		_engine.lua.set_table_table_digital_button("keyboard", "i", _engine.rain.keys[KEY_I]);
+		_engine.lua.set_table_table_digital_button("keyboard", "j", _engine.rain.keys[KEY_J]);
+		_engine.lua.set_table_table_digital_button("keyboard", "k", _engine.rain.keys[KEY_K]);
+		_engine.lua.set_table_table_digital_button("keyboard", "l", _engine.rain.keys[KEY_L]);
+		_engine.lua.set_table_table_digital_button("keyboard", "m", _engine.rain.keys[KEY_M]);
+		_engine.lua.set_table_table_digital_button("keyboard", "n", _engine.rain.keys[KEY_N]);
+		_engine.lua.set_table_table_digital_button("keyboard", "o", _engine.rain.keys[KEY_O]);
+		_engine.lua.set_table_table_digital_button("keyboard", "p", _engine.rain.keys[KEY_P]);
+		_engine.lua.set_table_table_digital_button("keyboard", "q", _engine.rain.keys[KEY_Q]);
+		_engine.lua.set_table_table_digital_button("keyboard", "r", _engine.rain.keys[KEY_R]);
+		_engine.lua.set_table_table_digital_button("keyboard", "s", _engine.rain.keys[KEY_S]);
+		_engine.lua.set_table_table_digital_button("keyboard", "t", _engine.rain.keys[KEY_T]);
+		_engine.lua.set_table_table_digital_button("keyboard", "u", _engine.rain.keys[KEY_U]);
+		_engine.lua.set_table_table_digital_button("keyboard", "v", _engine.rain.keys[KEY_V]);
+		_engine.lua.set_table_table_digital_button("keyboard", "w", _engine.rain.keys[KEY_W]);
+		_engine.lua.set_table_table_digital_button("keyboard", "x", _engine.rain.keys[KEY_X]);
+		_engine.lua.set_table_table_digital_button("keyboard", "y", _engine.rain.keys[KEY_Y]);
+		_engine.lua.set_table_table_digital_button("keyboard", "z", _engine.rain.keys[KEY_Z]);
+
+		_engine.lua.set_table_table_digital_button("keyboard", "left", _engine.rain.keys[KEY_LEFT]);
+		_engine.lua.set_table_table_digital_button("keyboard", "right", _engine.rain.keys[KEY_RIGHT]);
+		_engine.lua.set_table_table_digital_button("keyboard", "up", _engine.rain.keys[KEY_UP]);
+		_engine.lua.set_table_table_digital_button("keyboard", "down", _engine.rain.keys[KEY_DOWN]);
+		_engine.lua.set_table_table_digital_button("keyboard", "lcontrol", _engine.rain.keys[KEY_LCTRL]);
+		_engine.lua.set_table_table_digital_button("keyboard", "rcontrol", _engine.rain.keys[KEY_RCTRL]);
+		_engine.lua.set_table_table_digital_button("keyboard", "control", _engine.rain.keys[KEY_CTRL]);
+		_engine.lua.set_table_table_digital_button("keyboard", "lshift", _engine.rain.keys[KEY_LSHIFT]);
+		_engine.lua.set_table_table_digital_button("keyboard", "rshift", _engine.rain.keys[KEY_RSHIFT]);
+		_engine.lua.set_table_table_digital_button("keyboard", "shift", _engine.rain.keys[KEY_SHIFT]);
+		_engine.lua.set_table_table_digital_button("keyboard", "alt", _engine.rain.keys[KEY_ALT]);
+		_engine.lua.set_table_table_digital_button("keyboard", "caps", _engine.rain.keys[KEY_CAPS]);
+		_engine.lua.set_table_table_digital_button("keyboard", "tab", _engine.rain.keys[KEY_TAB]);
+		_engine.lua.set_table_table_digital_button("keyboard", "space", _engine.rain.keys[KEY_SPACE]);
+		_engine.lua.set_table_table_digital_button("keyboard", "enter", _engine.rain.keys[KEY_RETURN]);
+		_engine.lua.set_table_table_digital_button("keyboard", "backspace", _engine.rain.keys[KEY_BACKSPACE]);
+		_engine.lua.set_table_table_digital_button("keyboard", "escape", _engine.rain.keys[KEY_ESCAPE]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f1", _engine.rain.keys[KEY_F1]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f2", _engine.rain.keys[KEY_F2]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f3", _engine.rain.keys[KEY_F3]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f4", _engine.rain.keys[KEY_F4]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f5", _engine.rain.keys[KEY_F5]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f6", _engine.rain.keys[KEY_F6]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f7", _engine.rain.keys[KEY_F7]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f8", _engine.rain.keys[KEY_F8]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f9", _engine.rain.keys[KEY_F9]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f10", _engine.rain.keys[KEY_F10]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f11", _engine.rain.keys[KEY_F11]);
+		_engine.lua.set_table_table_digital_button("keyboard", "f12", _engine.rain.keys[KEY_F12]);
+	}
+
+	_engine.lua.set_table_number("time", "dt", _engine.rain.dt);
+	_engine.lua.set_table_number("time", "seconds", _engine.rain.time_s);
+	time_lua_state = GetSeconds() - time_lua_state;
+	
+	return 0;
+}
+
+int lua_swap_buffers(lua_State* l) {
+	rain_swap_buffers(&_engine.rain);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	return 0;
+}
+
+int lua_sleep(lua_State *l) {
+	double t = lua_tonumber(l, 1);
+	usleep(t * 1000.0);
+
+	return 0;
+}

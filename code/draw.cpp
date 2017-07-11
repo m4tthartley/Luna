@@ -1,10 +1,5 @@
 
-#ifdef _WIN32
-#	include "w:/libs/math.c"
-#endif
-#ifdef __APPLE__
-#	include "/users/matt/documents/libs/math.c"
-#endif
+#include "../../libs/math.c"
 
 bool enable_dynamic_texture_loading = false;
 struct {
@@ -44,6 +39,9 @@ int lua_draw_rect(lua_State* l) {
 	float y = lua_tonumber(l, 2);
 	float width = lua_tonumber(l, 3);
 	float height = lua_tonumber(l, 4);
+
+	// lua_pushstring(l, "Error in draw_rect");
+	// lua_error(l);
 
 	draw_rect(x, y, width, height);
 
@@ -130,7 +128,10 @@ int _load_texture(char *file) {
 	int width;
 	int height;
 	int components;
-	unsigned char *data = stbi_load(file, &width, &height, &components, 0);
+
+	FileResult f = load_universal_file(file);
+	unsigned char *data = stbi_load_from_memory((stbi_uc*)f.data, f.size, &width, &height, &components, 0);
+    printf("%s\n", stbi_failure_reason());
 	if (!data) {
 		std::cout << "stb_image: unable to load image" << std::endl;
 		return 0;

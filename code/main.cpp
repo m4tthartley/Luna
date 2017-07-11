@@ -1,10 +1,10 @@
 
-#ifdef _WIN32
-#	include "w:/libs/rain.c"
-#endif
-#ifdef __APPLE__
-#	include "/users/matt/documents/libs/rain.c"
-#endif
+/*
+	TODO
+	- Check if a file exists locally before curling it
+*/
+
+#include "../../libs/rain.c"
 
 #include "types.h"
 
@@ -41,10 +41,15 @@
 #include "../lua/include/lua.hpp"
 #elif __APPLE__
 extern "C" {
-#include <Lua/lua.h>
-#include <Lua/lualib.h>
-#include <Lua/lauxlib.h>
+#include "../liblua/lua.h"
+#include "../liblua/lualib.h"
+#include "../liblua/lauxlib.h"
 }
+#endif
+
+#ifdef __APPLE__
+#	include "CoreFoundation/CoreFoundation.h"
+#	include <curl/curl.h>
 #endif
 
 #include "video.h"
@@ -66,11 +71,55 @@ FileResult load_file(char *file) {
 		fseek(f, 0, SEEK_END);
 		res.size = ftell(f);
 		fseek(f, 0, SEEK_SET);
-		res.data = malloc(res.size);
+		res.data = malloc(res.size + 1);
 		fread(res.data, 1, res.size, f);
+		res.str[res.size] = 0;
 		fclose(f);
 	}
 	return res;
+}
+
+bool _local = false;
+char *_address = "file:main.lua";
+char _path[256];
+
+CURL *c = NULL;
+char _file_buffer[1024*1024];
+int _file_buffer_size = 0;
+size_t curl_data_write(void *buffer, size_t size, size_t nmemb, void *user) {
+	size_t s = size*nmemb;
+	memcpy(_file_buffer + _file_buffer_size, (char*)buffer, s);
+//	_file_buffer[_file_buffer_size + size*nmemb] = 0;
+	_file_buffer_size += s;
+	return s;
+}
+FileResult load_universal_file(char *file) {
+	memset(_file_buffer, 0, _file_buffer_size);
+	_file_buffer_size = 0;
+	
+	char address[256] = {};
+	strcpy(address, _path);
+	strcat(address, file);
+	printf("%s\n", address);
+
+	if (_local/*strlen(address) > 5 &&
+		address[0] == 'f' &&
+		address[1] == 'i' &&
+		address[2] == 'l' &&
+		address[3] == 'e' &&
+		address[4] == ':'*/) {
+		// address += 5;
+		return load_file(address);
+	} else {
+		if (!c) c = curl_easy_init();
+		curl_easy_setopt(c, CURLOPT_URL, address);
+		curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
+		CURLcode result = curl_easy_perform(c);
+		char *mem = (char*)malloc(_file_buffer_size + 1);
+		memcpy(mem, _file_buffer, _file_buffer_size);
+		mem[_file_buffer_size] = 0;
+		return {mem, _file_buffer_size};
+	}
 }
 
 #include "draw.cpp"
@@ -84,9 +133,11 @@ FileResult load_file(char *file) {
 
 //#include "audio.h"
 
-#ifdef __APPLE__
-	#include "CoreFoundation/CoreFoundation.h"
-#endif
+//size_t curl_data_write(void *buffer, size_t size, size_t nmemb, void *user) {
+//	printf("size %i, nmemb %i\n", size, nmemb);
+//	printf("data\n%s\n", buffer);
+//	return size*nmemb;
+//}
 
 int main(int argc, char **argv)
 //int CALLBACK WinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd )
@@ -113,9 +164,39 @@ int main(int argc, char **argv)
 		debug_print("arg %s\n", argv[i]);
 	}
 
-	Engine engine = {};
-	if (argc > 1) engine.default_lua_file = argv[1];
-	engine.run();
+//	CURL *c = curl_easy_init();
+//	curl_easy_setopt(c, CURLOPT_URL, "mattsblog.net/josh.lua");
+//	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
+//	CURLcode result = curl_easy_perform(c);
+
+	//FileResult file = get_data_from_address("mattsblog.net/josh.lua");
+	//printf("%s\n", file.str);
+	
+	curl_global_init(CURL_GLOBAL_ALL);
+
+	if (argc > 1) _address = argv[1];
+	if (strlen(_address) > 5 &&
+		_address[0] == 'f' &&
+		_address[1] == 'i' &&
+		_address[2] == 'l' &&
+		_address[3] == 'e' &&
+		_address[4] == ':') {
+		_address += 5;
+		_local = true;
+	}
+
+	for (int i = strlen(_address); i >= 0; --i) {
+		if (_address[i] == '/') {
+			memcpy(_path, _address, i+1);
+			_path[i+1] = 0;
+			_address += i+1;
+			break;
+		}
+	}
+
+	// printf("%s\n%s\n", path, _address);
+
+	_engine.run();
 	
 	return 0;
 }

@@ -8,11 +8,11 @@ public:
 	lua_State* l;
 	bool error;
 
-	Lua() {};
-	Lua(char *lua_file);
+	// Lua() {};
+	void init(char *lua_file);
 	void loadSettings(int &width, int &height, double &viewportScale, bool &fullscreen, std::string &title, bool &limitFrames);
 
-	bool get_table_var(char *table, char *var);
+	char *get_table_var(char *table, char *var);
 	bool get_table_table_var(char *table, char *table2, char *var);
 	void set_table_table_number(char *table, char *table2, char *var, float num);
 	void set_table_table_bool(char *table, char *table2, char *var, bool b);
