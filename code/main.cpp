@@ -83,7 +83,13 @@ bool _local = false;
 char *_address = "file:main.lua";
 char _path[256];
 
-CURL *c = NULL;
+#ifdef _WIN32
+#define far
+#include <wininet.h>
+#undef far
+HINTERNET net_handle = InternetOpen("Luna", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+#endif
+
 char _file_buffer[1024*1024];
 int _file_buffer_size = 0;
 size_t curl_data_write(void *buffer, size_t size, size_t nmemb, void *user) {
@@ -111,10 +117,27 @@ FileResult load_universal_file(char *file) {
 		// address += 5;
 		return load_file(address);
 	} else {
+#ifdef __APPLE__
+		static CURL *c = NULL;
 		if (!c) c = curl_easy_init();
 		curl_easy_setopt(c, CURLOPT_URL, address);
 		curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
 		CURLcode result = curl_easy_perform(c);
+#endif
+#ifdef _WIN32
+		DWORD context = 567;
+		HINTERNET connection = InternetConnect(net_handle, "mattsblog.net", 80, NULL, NULL, INTERNET_SERVICE_HTTP, 0, (DWORD_PTR)&context);
+		char *rgpszAcceptTypes[] = {"text/*", "image/*", "font/*", NULL};
+		// INTERNET_FLAG_RESYNCHRONIZE
+		HINTERNET request = HttpOpenRequestA(connection, NULL, "/particles.lua", NULL, NULL, (LPCSTR*)&rgpszAcceptTypes, 0, (DWORD_PTR)&context);
+		//HttpOpenRequest()
+		bool result = HttpSendRequest(request, NULL, 0, NULL, 0);
+		//char buf
+		DWORD len = array_size(_file_buffer);
+		DWORD index = 0;
+		HttpQueryInfo(request, HTTP_QUERY_ACCEPT, _file_buffer, &len, &index);
+		int x = 0;
+#endif
 		char *mem = (char*)malloc(_file_buffer_size + 1);
 		memcpy(mem, _file_buffer, _file_buffer_size);
 		mem[_file_buffer_size] = 0;
@@ -172,7 +195,9 @@ int main(int argc, char **argv)
 	//FileResult file = get_data_from_address("mattsblog.net/josh.lua");
 	//printf("%s\n", file.str);
 	
+#ifdef __APPLE__
 	curl_global_init(CURL_GLOBAL_ALL);
+#endif
 
 	if (argc > 1) _address = argv[1];
 	if (strlen(_address) > 5 &&

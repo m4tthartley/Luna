@@ -138,7 +138,7 @@ struct Engine {
 Engine _engine;
 
 int lua_update(lua_State* l) {
-	rain_poll_input(&_engine.rain);
+	rain_poll_events(&_engine.rain);
 	rain_poll_time(&_engine.rain);
 
 	if (_engine.rain.quit) {
@@ -151,13 +151,17 @@ int lua_update(lua_State* l) {
 #ifdef _WIN32
 	if (GetAsyncKeyState(VK_CONTROL) && (GetAsyncKeyState('S') || GetAsyncKeyState('R'))) {
 		if (!reload_shortcut) {
-			for (int i = 0; i < texture_count; ++i) {
+			/*for (int i = 0; i < texture_count; ++i) {
 				glDeleteTextures(1, &textures[i].tex);
 			}
 			texture_count = 0;
 			lua_close(lua.l);
 			lua = Lua(default_lua_file);
-			lua.appFunc("init");
+			lua.appFunc("init");*/
+
+			_engine.reload = true;
+			lua_pushstring(_engine.lua.l, "reloading...");
+			lua_error(_engine.lua.l);
 		}
 		reload_shortcut = true;
 	} else {
@@ -305,7 +309,12 @@ int lua_swap_buffers(lua_State* l) {
 
 int lua_sleep(lua_State *l) {
 	double t = lua_tonumber(l, 1);
+#ifdef __APPLE__
 	usleep(t * 1000.0);
+#endif
+#if _WIN32
+	Sleep(t);
+#endif
 
 	return 0;
 }
