@@ -46,21 +46,25 @@ function run()
 				-- p.speed.x = p.speed.x * -0.75
 				-- p.speed.y = p.speed.y * 0.9
 				p.speed:mul(vec2(-0.75, 0.9))
+				p.pos.x = window.size.x - size
 			end
 			if p.pos.y + size > window.size.y and p.speed.y > 0.0 then
 				-- p.speed.y = p.speed.y * -0.75
 				-- p.speed.x = p.speed.x * 0.9
 				p.speed:mul(vec2(0.9, -0.75))
+				p.pos.y = window.size.y - size
 			end
 			if p.pos.x < 0.0 and p.speed.x < 0.0 then
 				-- p.speed.x = p.speed.x * -0.75
 				-- p.speed.y = p.speed.y * 0.9
 				p.speed:mul(vec2(-0.75, 0.9))
+				p.pos.x = 0.0
 			end
 			if p.pos.y < 0.0 and p.speed.y < 0.0 then
 				-- p.speed.y = p.speed.y * -0.75
 				-- p.speed.x = p.speed.x * 0.9
 				p.speed:mul(vec2(0.9, -0.75))
+				p.pos.y = 0.0
 			end
 
 			for j,p2 in ipairs(particles) do
@@ -70,12 +74,23 @@ function run()
 					if dist < size then
 						vec2_sub(p.pos, p2.pos)
 						-- p.speed:add(vec2_mul(p2.speed, vec2_sub(p2.speed, p.speed)))
-						p.speed:add(vec2_sub(p2.speed, p.speed))
-						local s = vec2(size, size)
+
+						-- p.speed:add(vec2_sub(p2.speed, p.speed))
+						-- local s = vec2(size, size)
+						-- local diff = vec2_sub(p.pos, p2.pos)
+						-- diff:normalize()
+						-- diff:mul(s)
+						-- p.pos = vec2_add(p2.pos, diff)
+
+						-- local temp = vec2(p.speed.x, p.speed.y)
+						-- p.speed = vec2_mul(vec2(p2.speed.x, p2.speed.y), vec2(0.99, 0.99))
+						-- p2.speed = vec2_mul(temp, vec2(0.99, 0.99))
+
+						local move = (size - dist) / 2.0
 						local diff = vec2_sub(p.pos, p2.pos)
 						diff:normalize()
-						diff:mul(s)
-						p.pos = vec2_add(p2.pos, diff)
+						p.pos = vec2_add(p.pos, vec2_mul(diff, vec2(move, move)))
+						p2.pos = vec2_add(p2.pos, vec2_mul(diff, vec2(-move, -move)))
 					end
 
 					-- if vec2_sub(p.pos, p2.pos):len() < 10.0 then
