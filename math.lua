@@ -24,7 +24,8 @@ vec2 = function(x, y)
 		return math.sqrt(self.x*self.x + self.y*self.y)
 	end
 	function vec:normalize()
-		self:div(vec2(self:len(), self:len()))
+		local len = self:len()
+		self:div(vec2(len, len))
 	end
 
 	return vec

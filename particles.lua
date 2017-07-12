@@ -71,9 +71,11 @@ function run()
 						vec2_sub(p.pos, p2.pos)
 						-- p.speed:add(vec2_mul(p2.speed, vec2_sub(p2.speed, p.speed)))
 						p.speed:add(vec2_sub(p2.speed, p.speed))
-						p.pos = vec2_add(p2.pos,
-									vec2_sub(p.pos, p2.pos):normalize():mul(vec2(size, size))
-								)
+						local s = vec2(size, size)
+						local diff = vec2_sub(p.pos, p2.pos)
+						diff:normalize()
+						diff:mul(s)
+						p.pos = vec2_add(p2.pos, diff)
 					end
 
 					-- if vec2_sub(p.pos, p2.pos):len() < 10.0 then
