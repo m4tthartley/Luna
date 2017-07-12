@@ -240,7 +240,7 @@ float2 GetTextDim(int fontid, char *str, float2 s, float widthLimit)
 				{
 					uint32 SearchIndex = 1;
 					float SearchAdvance = 0.0f;
-					while (str[SearchIndex] != ' ' && str[SearchIndex] != '\n' && str[SearchIndex] != NULL)
+					while (str[SearchIndex] != ' ' && str[SearchIndex] != '\n' && str[SearchIndex] != 0)
 					{
 						SearchAdvance += Font_GetAdvance(Font, str[SearchIndex-1], str[SearchIndex], s);
 						++SearchIndex;
@@ -334,7 +334,7 @@ void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float Bound
 			{
 				uint32 SearchIndex = 1;
 				float SearchAdvance = 0.0f;
-				while (P[SearchIndex] != ' ' && P[SearchIndex] != '\n' && P[SearchIndex] != NULL)
+				while (P[SearchIndex] != ' ' && P[SearchIndex] != '\n' && P[SearchIndex] != 0)
 				{
 					SearchAdvance += Font_GetAdvance(Font, P[SearchIndex-1], P[SearchIndex], s);
 					++SearchIndex;

@@ -373,10 +373,15 @@ int lua_file_request(lua_State* l);
 void Lua::registerTables() {
 	LUA_BLOCK_BEGIN
 
+	create_lua_func("draw_line", lua_draw_line);
+	create_lua_func("draw_triangle", lua_draw_triangle);
+	create_lua_func("draw_line_triangle", lua_draw_line_triangle);
 	create_lua_func("draw_rect", lua_draw_rect);
+	create_lua_func("draw_line_rect", lua_draw_line_rect);
 	create_lua_func("set_tex_coords", lua_set_tex_coords);
 	create_lua_func("draw_rect_texture", lua_draw_rect_texture);
 	create_lua_func("draw_circle", lua_draw_circle);
+	create_lua_func("draw_line_circle", lua_draw_line_circle);
 	create_lua_func("set_color", lua_set_color);
 	create_lua_func("load_texture", lua_load_texture);
 	create_lua_func("rotate", lua_rotate);

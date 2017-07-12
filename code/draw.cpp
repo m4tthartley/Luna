@@ -17,6 +17,34 @@ float2 _tex_coords[4] = {
 
 float current_rotation = 0.0f;
 
+void draw_line(float x, float y, float x2, float y2) {
+	glBegin(GL_LINES);
+	glVertex2f(x, y);
+	glVertex2f(x2, y2);
+	glEnd();
+}
+
+void draw_triangle(float x1, float y1, float x2, float y2, float x3, float y3) {
+	glPushMatrix();
+	glBegin(GL_TRIANGLES);
+	glVertex2f(x1, y1);
+	glVertex2f(x2, y2);
+	glVertex2f(x3, y3);
+	glEnd();
+	glPopMatrix();
+}
+
+void draw_line_triangle(float x1, float y1, float x2, float y2, float x3, float y3) {
+	glPushMatrix();
+	glBegin(GL_LINE_STRIP);
+	glVertex2f(x1, y1);
+	glVertex2f(x2, y2);
+	glVertex2f(x3, y3);
+	glVertex2f(x1, y1);
+	glEnd();
+	glPopMatrix();
+}
+
 void draw_rect(float x, float y, float width, float height) {
 	float w = width/2.0f;
 	float h = height/2.0f;
@@ -34,18 +62,22 @@ void draw_rect(float x, float y, float width, float height) {
 	current_rotation = 0.0f;
 }
 
-int lua_draw_rect(lua_State* l) {
-	float x = lua_tonumber(l, 1);
-	float y = lua_tonumber(l, 2);
-	float width = lua_tonumber(l, 3);
-	float height = lua_tonumber(l, 4);
+void draw_line_rect(float x, float y, float width, float height) {
+	float w = width/2.0f;
+	float h = height/2.0f;
+	glPushMatrix();
+	glTranslatef(x + w, y + h, 0.0f);
+	glRotatef(todeg(current_rotation), 0, 0, 1);
+	glBegin(GL_LINE_STRIP);
+	glVertex3f(-w, -h, 0);
+	glVertex3f(w, -h, 0);
+	glVertex3f(w, h, 0);
+	glVertex3f(-w, h, 0);
+	glVertex3f(-w, -h, 0);
+	glEnd();
+	glPopMatrix();
 
-	// lua_pushstring(l, "Error in draw_rect");
-	// lua_error(l);
-
-	draw_rect(x, y, width, height);
-
-	return 0;
+	current_rotation = 0.0f;
 }
 
 void set_tex_coords(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
@@ -53,21 +85,6 @@ void set_tex_coords(float x1, float y1, float x2, float y2, float x3, float y3, 
 	_tex_coords[1] = {x2, y2};
 	_tex_coords[2] = {x3, y3};
 	_tex_coords[3] = {x4, y4};
-}
-
-int lua_set_tex_coords(lua_State* l) {
-	float x1 = lua_tonumber(l, 1);
-	float y1 = lua_tonumber(l, 2);
-	float x2 = lua_tonumber(l, 3);
-	float y2 = lua_tonumber(l, 4);
-	float x3 = lua_tonumber(l, 5);
-	float y3 = lua_tonumber(l, 6);
-	float x4 = lua_tonumber(l, 7);
-	float y4 = lua_tonumber(l, 8);
-
-	set_tex_coords(x1, y1, x2, y2, x3, y3, x4, y4);
-
-	return 0;
 }
 
 void draw_rect_texture(int texture, float x, float y, float width, float height) {
@@ -99,29 +116,6 @@ void draw_rect_texture(int texture, float x, float y, float width, float height)
 		0.0f, 1.0f);
 
 	current_rotation = 0.0f;
-}
-
-int lua_draw_rect_texture(lua_State* l) {
-	int texture = lua_tonumber(l, 1);
-	float x = lua_tonumber(l, 2);
-	float y = lua_tonumber(l, 3);
-	float width = lua_tonumber(l, 4);
-	float height = lua_tonumber(l, 5);
-
-	draw_rect_texture(texture, x, y, width, height);
-
-	return 0;
-}
-
-int lua_set_color(lua_State* l) {
-	float r = lua_tonumber(l, 1);
-	float g = lua_tonumber(l, 2);
-	float b = lua_tonumber(l, 3);
-	float a = lua_tonumber(l, 4);
-
-	glColor4f(r, g, b, a);
-
-	return 0;
 }
 
 int _load_texture(char *file) {
@@ -176,14 +170,6 @@ int load_texture(char *file) {
 	return texture_count++;
 }
 
-int lua_load_texture(lua_State* l) {
-	char *file = (char*)lua_tostring(l, 1);
-	unsigned int number = load_texture(file);
-	lua_pushnumber(l, number);
-
-	return 1;
-}
-
 void draw_circle(float x, float y, float w, float h) {
 	float rw = (w*0.5f);
 	float rh = (h*0.5f);
@@ -202,6 +188,139 @@ void draw_circle(float x, float y, float w, float h) {
 	current_rotation = 0.0f;
 }
 
+void draw_line_circle(float x, float y, float w, float h) {
+	float rw = (w*0.5f);
+	float rh = (h*0.5f);
+	int steps = 100;
+	glPushMatrix();
+	glTranslatef(x + rw, y + rh, 0.0);
+	glRotatef(todeg(current_rotation), 0, 0, 1);
+	glBegin(GL_LINE_STRIP);
+	for (int i = 0; i < steps + 1; i++) {
+		float rad = (((float)i / (float)steps) * PI2);
+		glVertex3f((cosf(rad)*rw), (sinf(rad)*rh), 0.0f);
+	}
+	glEnd();
+	glPopMatrix();
+
+	current_rotation = 0.0f;
+}
+
+void rotate(float rads) {
+	//glRotatef(rads, 0.0f, 0.0f, 1.0f);
+	current_rotation = rads;
+}
+
+//////////////////////////////
+
+int lua_draw_line(lua_State* l) {
+	float x = lua_tonumber(l, 1);
+	float y = lua_tonumber(l, 2);
+	float x2 = lua_tonumber(l, 3);
+	float y2 = lua_tonumber(l, 4);
+
+	draw_line(x, y, x2, y2);
+
+	return 0;
+}
+
+int lua_draw_triangle(lua_State* l) {
+	float x1 = lua_tonumber(l, 1);
+	float y1 = lua_tonumber(l, 2);
+	float x2 = lua_tonumber(l, 3);
+	float y2 = lua_tonumber(l, 4);
+	float x3 = lua_tonumber(l, 5);
+	float y3 = lua_tonumber(l, 6);
+
+	draw_triangle(x1, y1, x2, y2, x3, y3);
+
+	return 0;
+}
+
+int lua_draw_line_triangle(lua_State* l) {
+	float x1 = lua_tonumber(l, 1);
+	float y1 = lua_tonumber(l, 2);
+	float x2 = lua_tonumber(l, 3);
+	float y2 = lua_tonumber(l, 4);
+	float x3 = lua_tonumber(l, 5);
+	float y3 = lua_tonumber(l, 6);
+
+	draw_line_triangle(x1, y1, x2, y2, x3, y3);
+
+	return 0;
+}
+
+int lua_draw_rect(lua_State* l) {
+	float x = lua_tonumber(l, 1);
+	float y = lua_tonumber(l, 2);
+	float width = lua_tonumber(l, 3);
+	float height = lua_tonumber(l, 4);
+
+	// lua_pushstring(l, "Error in draw_rect");
+	// lua_error(l);
+
+	draw_rect(x, y, width, height);
+
+	return 0;
+}
+
+int lua_draw_line_rect(lua_State* l) {
+	float x = lua_tonumber(l, 1);
+	float y = lua_tonumber(l, 2);
+	float width = lua_tonumber(l, 3);
+	float height = lua_tonumber(l, 4);
+
+	draw_line_rect(x, y, width, height);
+
+	return 0;
+}
+
+int lua_set_tex_coords(lua_State* l) {
+	float x1 = lua_tonumber(l, 1);
+	float y1 = lua_tonumber(l, 2);
+	float x2 = lua_tonumber(l, 3);
+	float y2 = lua_tonumber(l, 4);
+	float x3 = lua_tonumber(l, 5);
+	float y3 = lua_tonumber(l, 6);
+	float x4 = lua_tonumber(l, 7);
+	float y4 = lua_tonumber(l, 8);
+
+	set_tex_coords(x1, y1, x2, y2, x3, y3, x4, y4);
+
+	return 0;
+}
+
+int lua_draw_rect_texture(lua_State* l) {
+	int texture = lua_tonumber(l, 1);
+	float x = lua_tonumber(l, 2);
+	float y = lua_tonumber(l, 3);
+	float width = lua_tonumber(l, 4);
+	float height = lua_tonumber(l, 5);
+
+	draw_rect_texture(texture, x, y, width, height);
+
+	return 0;
+}
+
+int lua_set_color(lua_State* l) {
+	float r = lua_tonumber(l, 1);
+	float g = lua_tonumber(l, 2);
+	float b = lua_tonumber(l, 3);
+	float a = lua_tonumber(l, 4);
+
+	glColor4f(r, g, b, a);
+
+	return 0;
+}
+
+int lua_load_texture(lua_State* l) {
+	char *file = (char*)lua_tostring(l, 1);
+	unsigned int number = load_texture(file);
+	lua_pushnumber(l, number);
+
+	return 1;
+}
+
 int lua_draw_circle(lua_State* l) {
 	float x = lua_tonumber(l, 1);
 	float y = lua_tonumber(l, 2);
@@ -213,9 +332,15 @@ int lua_draw_circle(lua_State* l) {
 	return 0;
 }
 
-void rotate(float rads) {
-	//glRotatef(rads, 0.0f, 0.0f, 1.0f);
-	current_rotation = rads;
+int lua_draw_line_circle(lua_State* l) {
+	float x = lua_tonumber(l, 1);
+	float y = lua_tonumber(l, 2);
+	float width = lua_tonumber(l, 3);
+	float height = lua_tonumber(l, 4);
+
+	draw_line_circle(x, y, width, height);
+
+	return 0;
 }
 
 int lua_rotate(lua_State* l) {

@@ -4,6 +4,13 @@
 	- Check if a file exists locally before curling it
 */
 
+//#pragma GCC diagnostic error "-Wuninitialized"
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wempty-body"
+
 #include "../../libs/rain.c"
 
 #include "types.h"

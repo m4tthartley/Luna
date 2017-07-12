@@ -46,7 +46,10 @@ struct Engine {
 		if (lua.get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua.l, -1);*/
 		rain.window_title = lua.get_table_var("window", "title");
 
+		rain.multisample_window = true;
 		rain_init(&rain);
+
+		glLineWidth(2.0f);
 
 		enable_dynamic_texture_loading = true;
 		for (int i = 0; i < texture_count; ++i) {

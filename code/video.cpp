@@ -176,7 +176,7 @@ void videoRenderCircle(double x, double y, double radius, double detailScale) {
 
 	for (int i = 0; i < detail; i++) {
 
-		double rad = (((double)i/(double)detail)*360)*(3.14159 / 180.0);
+		//double rad = (((double)i/(double)detail)*360)*(3.14159 / 180.0);
 		//glVertex3d( x+(cos(rad)*radius), y+(sin(rad)*radius), 0 );
 	}
 
