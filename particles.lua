@@ -5,8 +5,14 @@ local particles = {}
 local counter = 0
 local size = 6 * 1
 
-local font = load_font("jellee.ttf", 1.5)
+-- local font = load_font("jellee.ttf", 1.5)
 local image = load_texture("kitten2.jpg")
+
+-- from http://lua-users.org/wiki/SimpleRound
+function round(num, numDecimalPlaces)
+	local mult = 10^(numDecimalPlaces or 0)
+	return math.floor(num * mult + 0.5) / mult
+end
 
 function particle(p, c, s)
 	return {
@@ -21,13 +27,24 @@ function rand_signed()
 	return -1.0 + math.random()*2.0
 end
 
+-- local grid_size = 100
+-- local cell_size = size * 4
+-- local grid = {}
+-- table.setn(grid, grid_size*grid_size)
+-- function coord_to_grid(x, y)
+-- 	return y*grid_size + x
+-- end
+
 function run()
 	print(file_request('josh.lua'))
 	local printlua = loadstring(file_request('print.lua'))
 	-- print("printlua " .. printlua)
 	printlua()
 
+	local frame_time = 0
+
 	while true do
+		local start_time = get_seconds()
 		update()
 		get_input()
 		time.dt = 1.0 / 60.0
@@ -136,20 +153,27 @@ function run()
 		-- end
 
 		set_color(1.0, 1.0, 1.0, 1.0)
-		draw_font(font, "particles " .. #particles, 10, 0)
+		draw_font("jellee.ttf", 4.0, "particles " .. #particles, 10, 0)
 
 		set_color(1.0, 0.0, 1.0, 1.0)
+		local tx, ty = font_dimensions("arial.ttf", 4.0, "frame time " .. round(frame_time, 3))
+		-- draw_rect(10, 70, tx, ty)
+		set_color(1.0, 1.0, 1.0, 1.0)
+		-- draw_font("arial.ttf", 4.0, "frame time " .. round(frame_time, 3), 10, 70)
+		draw_font("jellee.ttf", 4.0, "Daisy, Daisy, give me your answer do. I'm half crazy all for the love of you. It won't be a stylish marriage. I can't afford a carriage. But you'll look sweet upon the seat. Of a bicycle built for two.", 10, 70, 1000)
 
-		draw_line(100, 100, 150, 150)
-		draw_line_rect(200, 100, 50, 50)
-		draw_line_circle(300, 100, 150, 150)
-		draw_triangle(500, 100, 550, 150, 500, 200)
-		draw_line_triangle(600, 100, 650, 150, 625, 200)
-		local tri = vec2(600, 100)
-		tri:add(vec2(650, 150))
-		tri:add(vec2(625, 200))
-		tri:div(vec2(3.0, 3.0))
-		draw_rect(tri.x, tri.y, 2, 2)
+		-- set_color(1.0, 0.0, 1.0, 1.0)
+		-- draw_line(100, 200, 150, 250)
+		-- draw_line_rect(200, 200, 50, 50)
+		-- draw_line_circle(300, 200, 150, 150)
+		-- draw_triangle(500, 100, 550, 150, 500, 200)
+		-- draw_line_triangle(600, 100, 650, 150, 625, 200)
+		-- local tri = vec2(600, 100)
+		-- tri:add(vec2(650, 150))
+		-- tri:add(vec2(625, 200))
+		-- tri:div(vec2(3.0, 3.0))
+		-- draw_rect(tri.x, tri.y, 2, 2)
+
 		--[[
 		
 		draw_line(float x, float y, float x2, float y2)
@@ -162,6 +186,8 @@ function run()
 
 		-- set_tex_coords(0, 0, 1, 0, 1, 1, 0, 1)
 		-- draw_rect_texture(image, 10, 100, 600, 400)
+
+		frame_time = get_seconds() - start_time
 
 		swap_buffers()
 	end

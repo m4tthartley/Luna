@@ -333,3 +333,9 @@ int lua_file_request(lua_State *l) {
 		return 0;
 	}
 }
+
+int lua_get_seconds(lua_State *l) {
+	double s = GetSeconds();
+	lua_pushnumber(l, s);
+	return 1;
+}

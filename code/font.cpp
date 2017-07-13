@@ -20,6 +20,7 @@ struct FontCache {
 	int size;
 	float glyphScale;
 	float pixelGlyphScale;
+	char file[256];
 
 	stbtt_fontinfo STBFontInfo;
 	int Ascent;
@@ -53,10 +54,15 @@ void init_font_system() {
 	glGenTextures(1, &fontMegaTexture.id);
 	glBindTexture(GL_TEXTURE_2D, fontMegaTexture.id);
 	//unsigned char *data = (unsigned char*)gjPushMemStack(&RState->memStack, 1024*1024*4);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, FONT_MEGA_TEXTURE_WIDTH, FONT_MEGA_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	unsigned char *mem = (unsigned char*)malloc(4 * FONT_MEGA_TEXTURE_WIDTH * FONT_MEGA_TEXTURE_HEIGHT);
+	memset(mem, 0, 4 * FONT_MEGA_TEXTURE_WIDTH * FONT_MEGA_TEXTURE_HEIGHT);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, FONT_MEGA_TEXTURE_WIDTH, FONT_MEGA_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, mem);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// float4 color = {1.0f, 0.0f, 0.0f, 1.0f};
+	// glClearTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
 }
 
 int LoadFont(char *File, float scale)
@@ -78,11 +84,25 @@ int LoadFont(char *File, float scale)
 		//size *= renderState->viewportScale;
 		font->size = (int)size;
 		font->pixelGlyphScale = stbtt_ScaleForPixelHeight(&font->STBFontInfo, size);
+
+		strcpy(font->file, File);
 	} else {
 		return -1;
 	}
 
 	return font_count++;
+}
+
+FontCache *GetFontCache(char *font_file, float size) {
+	float s = DEFAULT_FONT_SIZE * size;
+	for (int i = 0; i < font_count; ++i) {
+		if (strcmp(font_file, fonts[i].file)==0 &&
+			s > fonts[i].size-0.1f && s < fonts[i].size+0.1f) {
+			return &fonts[i];
+		}
+	}
+
+	return &fonts[LoadFont(font_file, size)];
 }
 
 //Font_Cache *cacheFont(render_state *renderState, asset_font *font, float scale) {
@@ -188,7 +208,7 @@ void LoadFontGlyph(FontCache *font, char GlyphIndex) {
 }
 
 
-float Font_GetAdvance(FontCache *font, char a, char b, float2 s)
+float Font_GetAdvance(FontCache *font, char a, char b, float size)
 {
 	float Kern = 0.0f;
 	if (b)
@@ -197,16 +217,19 @@ float Font_GetAdvance(FontCache *font, char a, char b, float2 s)
 	}
 
 	float GlyphAdvance = (float)font->glyphs[a].advanceWidth;
-	float Result = ((GlyphAdvance * font->glyphScale) + (Kern * font->glyphScale)) * s.x;
+	float Result = ((GlyphAdvance * font->glyphScale) + (Kern * font->glyphScale)) * size;
 	return Result;
 }
 
-float2 GetTextDim(int fontid, char *str, float2 s, float widthLimit)
+float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 {
 	/*asset_font *Font = GetFont(rstate->platform, rstate->Assets, assetID);
 	Font_Cache *fontCache = getFontCache(rstate->platform, rstate, assetID, s.y);*/
-	if (fontid == -1) return{};
-	FontCache *Font = &fonts[fontid];
+
+	// FontCache *Font = &fonts[fontid];
+	FontCache *Font = GetFontCache(font_file, size);
+
+	size = 1.0f;
 
 	float2 dim = {};
 
@@ -216,7 +239,7 @@ float2 GetTextDim(int fontid, char *str, float2 s, float widthLimit)
 		char LastChar = 0;
 
 		float Advance = 0.0f;
-		float StartOffset = (Font->Ascent-Font->Descent) * Font->glyphScale * s.y /** Font->RenderScale*/;
+		float StartOffset = (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
 		float RowOffset = StartOffset;
 		float biggest_advance = 0.0f;
 
@@ -224,7 +247,7 @@ float2 GetTextDim(int fontid, char *str, float2 s, float widthLimit)
 		{
 			if (*str == '\n')
 			{
-				RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * s.y /** Font->RenderScale*/;
+				RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
 				// ++RowsRendered;
 
 				LastChar = *str;
@@ -242,13 +265,13 @@ float2 GetTextDim(int fontid, char *str, float2 s, float widthLimit)
 					float SearchAdvance = 0.0f;
 					while (str[SearchIndex] != ' ' && str[SearchIndex] != '\n' && str[SearchIndex] != 0)
 					{
-						SearchAdvance += Font_GetAdvance(Font, str[SearchIndex-1], str[SearchIndex], s);
+						SearchAdvance += Font_GetAdvance(Font, str[SearchIndex-1], str[SearchIndex], size);
 						++SearchIndex;
 					}
 
 					if (Advance+SearchAdvance > widthLimit-10.0f)
 					{
-						RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * s.y /** Font->RenderScale*/;
+						RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
 						// ++RowsRendered;
 
 						Advance = 0.0f;
@@ -270,7 +293,7 @@ float2 GetTextDim(int fontid, char *str, float2 s, float widthLimit)
 			}
 
 			float GlyphAdvance = (float)Font->glyphs[*str].advanceWidth;
-			Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * s.x /** Font->RenderScale*/;
+			Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * size /** Font->RenderScale*/;
 			if (Advance > biggest_advance) biggest_advance = Advance;
 
 			LastChar = *str;
@@ -286,14 +309,16 @@ float2 GetTextDim(int fontid, char *str, float2 s, float widthLimit)
 }
 
 // int fontid, char *str, float2 s, float widthLimit
-void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float BoundingBoxX = 0.0f, float *RenderedHeight = NULL)
+void _PushFont(char *font_file, char *Text, float3 p, float size, float4 c, float BoundingBoxX = 0.0f, float *RenderedHeight = NULL)
 {
 	/*asset_font *Font = GetFont(rstate->platform, rstate->Assets, assetID);
 	Font_Cache *fontCache = getFontCache(rstate->platform, rstate, assetID, s.y);*/
-	if (fontid == -1) return;
-	FontCache *Font = &fonts[fontid];
 
-	s = {1.0f, 1.0f};
+	// FontCache *Font = &fonts[fontid];
+	FontCache *Font = GetFontCache(font_file, size);
+	if (!Font) return;
+
+	size = 1.0f;
 
 	int glyphCount = strlen(Text);
 	//Glyph_Render_Command *glyphs = (Glyph_Render_Command*)gjPushMemStack(&RState->memStack, sizeof(Glyph_Render_Command)*glyphCount, true);
@@ -307,7 +332,7 @@ void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float Bound
 
 	uint32 RowsRendered = 0;
 
-	float StartOffset = (Font->Ascent-Font->Descent) * Font->glyphScale * s.y /** Font->RenderScale*/;
+	float StartOffset = (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
 	float RowOffset = StartOffset;
 
 	glEnable(GL_TEXTURE_2D);
@@ -318,7 +343,7 @@ void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float Bound
 	{
 		if (*P == '\n')
 		{
-			RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * s.y /** Font->RenderScale*/;
+			RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
 			++RowsRendered;
 
 			LastChar = *P;
@@ -336,14 +361,14 @@ void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float Bound
 				float SearchAdvance = 0.0f;
 				while (P[SearchIndex] != ' ' && P[SearchIndex] != '\n' && P[SearchIndex] != 0)
 				{
-					SearchAdvance += Font_GetAdvance(Font, P[SearchIndex-1], P[SearchIndex], s);
+					SearchAdvance += Font_GetAdvance(Font, P[SearchIndex-1], P[SearchIndex], size);
 					++SearchIndex;
 				}
 				//SearchAdvance += Font_GetAdvance(Font, P[SearchIndex-1], P[SearchIndex]);
 
 				if (Advance+SearchAdvance > BoundingBoxX-10.0f)
 				{
-					RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * s.y /** Font->RenderScale*/;
+					RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
 					++RowsRendered;
 
 					Advance = 0.0f;
@@ -365,8 +390,8 @@ void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float Bound
 		// advanceWidth is the offset from the current horizontal position to the next horizontal position
 		// these are expressed in unscaled coordinates
 
-		float2 Offset = {Font->glyphs[*P].bitmapOffset.x * s.x, Font->glyphs[*P].bitmapOffset.y * s.y} /** Font->RenderScale*/;
-		float GlyphSideBearing = (float)Font->glyphs[*P].leftSideBearing * Font->glyphScale * s.x /** Font->RenderScale*/;
+		float2 Offset = {Font->glyphs[*P].bitmapOffset.x * size, Font->glyphs[*P].bitmapOffset.y * size} /** Font->RenderScale*/;
+		float GlyphSideBearing = (float)Font->glyphs[*P].leftSideBearing * Font->glyphScale * size /** Font->RenderScale*/;
 		//Advance += GlyphSideBearing ;
 		float XPos = p.x+Advance;
 		//XPos += XOffset;
@@ -405,7 +430,7 @@ void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float Bound
 		}
 
 		float GlyphAdvance = (float)Font->glyphs[*P].advanceWidth;
-		Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * s.x /** Font->RenderScale*/;
+		Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * size /** Font->RenderScale*/;
 
 		// int32 Adv = Font->Glyphs[*P].AdvanceWidth;
 
@@ -426,23 +451,27 @@ void _PushFont(int fontid, char *Text, float3 p, float2 s, float4 c, float Bound
 }
 
 int lua_draw_font(lua_State* l) {
-	int fontid = lua_tonumber(l, 1);
-	char *str = (char*)lua_tostring(l, 2);
-	float x = lua_tonumber(l, 3);
-	float y = lua_tonumber(l, 4);
-	float width = lua_tonumber(l, 5);
+	// int fontid = lua_tonumber(l, 1);
+	char *font_file = (char*)lua_tostring(l, 1);
+	float size = lua_tonumber(l, 2);
+	char *str = (char*)lua_tostring(l, 3);
+	float x = lua_tonumber(l, 4);
+	float y = lua_tonumber(l, 5);
+	float width = lua_tonumber(l, 6);
 
-	_PushFont(fontid, str, {x, y, 0}, {1, 1}, {1, 1, 1, 1}, width);
+	_PushFont(font_file, str, {x, y, 0}, size, {1, 1, 1, 1}, width);
 
 	return 0;
 }
 
 int lua_font_dimensions(lua_State* l) {
-	int fontid = lua_tonumber(l, 1);
-	char *str = (char*)lua_tostring(l, 2);
-	float width = lua_tonumber(l, 3);
+	// int fontid = lua_tonumber(l, 1);
+	char *font_file = (char*)lua_tostring(l, 1);
+	float size = lua_tonumber(l, 2);
+	char *str = (char*)lua_tostring(l, 3);
+	float width = lua_tonumber(l, 4);
 
-	float2 dim = GetTextDim(fontid, str, {1, 1}, width);
+	float2 dim = GetTextDim(font_file, str, size, width);
 	lua_pushnumber(l, dim.x);
 	lua_pushnumber(l, dim.y);
 

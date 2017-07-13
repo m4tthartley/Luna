@@ -369,6 +369,7 @@ int lua_get_input(lua_State* l);
 int lua_swap_buffers(lua_State* l);
 int lua_sleep(lua_State* l);
 int lua_file_request(lua_State* l);
+int lua_get_seconds(lua_State* l);
 
 void Lua::registerTables() {
 	LUA_BLOCK_BEGIN
@@ -396,6 +397,8 @@ void Lua::registerTables() {
 
 	create_lua_func("sleep", lua_sleep);
 	create_lua_func("file_request", lua_file_request);
+
+	create_lua_func("get_seconds", lua_get_seconds);
 
 	// Video
 	/*registerFunction("video", "enableTextures", luaEnableTextures);

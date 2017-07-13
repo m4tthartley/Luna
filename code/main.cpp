@@ -32,6 +32,8 @@
 #include <string>
 #include <functional>
 #include <map>
+#include <memory.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 //#include <glew.h>
