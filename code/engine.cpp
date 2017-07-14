@@ -1,6 +1,34 @@
 
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
 
+enum EventType {
+	EVENT_DRAW_LINE,
+	EVENT_DRAW_TRIANGLE,
+	EVENT_DRAW_LINE_TRIANGLE,
+	EVENT_DRAW_RECT,
+	EVENT_DRAW_LINE_RECT,
+	EVENT_SET_TEX_COORDS,
+	EVENT_DRAW_RECT_TEXTURE,
+	EVENT_DRAW_CIRCLE,
+	EVENT_DRAW_LINE_CIRCLE,
+	EVENT_SET_COLOR,
+	EVENT_LOAD_TEXTURE,
+	EVENT_ROTATE,
+};
+struct LunaEvent {
+	EventType type;
+	union {
+		float2 pos;
+		float2 pos2;
+		float2 pos3;
+		float2 pos4;
+		int texture;
+		char *file;
+		float amount;
+		float scale;
+	} params;
+};
+
 static int mousex;
 static int mousey;
 static int fps;
