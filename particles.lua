@@ -1,4 +1,7 @@
 
+file_request("url:mattsblog.net/particles.lua")
+file_request("url:mattsblog.net/math.lua")
+
 assert(loadstring(file_request("math.lua")))()
 
 local particles = {}
