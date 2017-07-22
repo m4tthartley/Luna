@@ -370,6 +370,7 @@ int lua_swap_buffers(lua_State* l);
 int lua_sleep(lua_State* l);
 int lua_file_request(lua_State* l);
 int lua_get_seconds(lua_State* l);
+int lua_key_state(lua_State *l);
 
 void Lua::registerTables() {
 	LUA_BLOCK_BEGIN
@@ -389,12 +390,14 @@ void Lua::registerTables() {
 	create_lua_func("clear_rect", lua_clear_rect);
 	create_lua_func("clear_color", lua_clear_color);
 
+	create_lua_func("key_state", lua_key_state);
+
 	create_lua_func("draw_font", lua_draw_font);
 	create_lua_func("font_dimensions", lua_font_dimensions);
 	create_lua_func("load_font", lua_load_font);
 
 	create_lua_func("update", lua_update);
-	create_lua_func("get_input", lua_get_input);
+	// create_lua_func("get_input", lua_get_input);
 	create_lua_func("swap_buffers", lua_swap_buffers);
 
 	create_lua_func("sleep", lua_sleep);

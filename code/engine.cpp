@@ -8,6 +8,8 @@ static int tps;
 static int qps;
 static void addqps(int num) { qps += num; }
 
+Rain rain;
+
 void lua_thread(void *arg) {
 	// do {
 	// 	if (reload) {
@@ -58,7 +60,59 @@ struct Engine {
 	static int getTicks(lua_State* l);
 	static int getQps(lua_State* l);*/
 
-	Rain rain = {};
+	void process_luna_event(LunaEvent e) {
+		// while (atomic_fetch32(&_event_count) > 0) {
+			// LunaEvent *e = &_events[_event_process_index];
+			// printf("luna event %i \n", e->type);
+			switch (e.type) {
+				case EVENT_DRAW_LINE:
+					draw_line(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y);
+					break;
+				case EVENT_DRAW_TRIANGLE:
+					draw_triangle(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y);
+					break;
+				case EVENT_DRAW_LINE_TRIANGLE:
+					draw_line_triangle(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y);
+					break;
+				case EVENT_DRAW_RECT:
+					draw_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+					break;
+				case EVENT_DRAW_LINE_RECT:
+					draw_line_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+					break;
+				case EVENT_SET_TEX_COORDS:
+					set_tex_coords(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y, e.draw.pos4.x, e.draw.pos4.y);
+					break;
+				case EVENT_DRAW_RECT_TEXTURE:
+					draw_rect_texture(e.draw.texture, e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+					break;
+				case EVENT_DRAW_CIRCLE:
+					draw_circle(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+					break;
+				case EVENT_DRAW_LINE_CIRCLE:
+					draw_line_circle(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+					break;
+				case EVENT_SET_COLOR:
+					glColor4f(e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a);
+					break;
+				case EVENT_LOAD_TEXTURE:
+					textures[e.draw.texture].tex = _load_texture(textures[e.draw.texture].file);
+					break;
+				case EVENT_ROTATE:
+					rotate(e.draw.amount);
+					break;
+				case EVENT_CLEAR_RECT:
+					clear_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+					break;
+				case EVENT_CLEAR_COLOR:
+					_clear_color = {e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a};
+					break;
+			}
+
+			++_event_process_index %= array_size(_events);
+			atomic_sub32(&_event_count, 1);
+		// }
+	}
 
 	void run() {
 		// lua.init(_address);
@@ -99,10 +153,74 @@ struct Engine {
 
 		init_font_system();
 
+		SDL_LunaEvent = SDL_RegisterEvents(1);
+		if (SDL_LunaEvent == 0xFFFFFFFF) {
+			printf("SDL_RegisterEvents failed! \n");
+		}
+
 		create_thread(lua_thread, &lua);
 
 		while (!rain.quit) {
-			rain_poll_events(&rain);
+			{
+				rain.mouse.position_delta.x = 0;
+				rain.mouse.position_delta.y = 0;
+				rain.mouse.wheel_delta = 0;
+				
+				rain.mouse.left.pressed = false;
+				rain.mouse.left.released = false;
+				rain.mouse.right.pressed = false;
+				rain.mouse.right.released = false;
+				rain.mouse.middle.pressed = false;
+				rain.mouse.middle.released = false;
+				
+				SDL_Event event;
+				while (SDL_PollEvent(&event)) {
+					switch (event.type) {
+						case SDL_QUIT:
+							rain.quit = true;
+							break;
+						case SDL_MOUSEBUTTONDOWN:
+							if (event.button.button == SDL_BUTTON_LEFT) update_digital_button(&rain.mouse.left, true);
+							if (event.button.button == SDL_BUTTON_RIGHT) update_digital_button(&rain.mouse.right, true);
+							if (event.button.button == SDL_BUTTON_MIDDLE) update_digital_button(&rain.mouse.middle, true);
+							break;
+						case SDL_MOUSEBUTTONUP:
+							if (event.button.button == SDL_BUTTON_LEFT) update_digital_button(&rain.mouse.left, false);
+							if (event.button.button == SDL_BUTTON_RIGHT) update_digital_button(&rain.mouse.right, false);
+							if (event.button.button == SDL_BUTTON_MIDDLE) update_digital_button(&rain.mouse.middle, false);
+							break;
+						case SDL_MOUSEMOTION:
+							rain.mouse.position = {event.motion.x, event.motion.y};
+							rain.mouse.position_delta = {event.motion.xrel, event.motion.yrel};
+							break;
+						case SDL_MOUSEWHEEL:
+							rain.mouse.wheel_delta += event.wheel.y;
+							break;
+						case SDL_WINDOWEVENT:
+							switch (event.window.event) {
+								case SDL_WINDOWEVENT_RESIZED:
+									rain.window_width = event.window.data1;
+									rain.window_height = event.window.data2;
+									break;
+							}
+							break;
+					}
+
+					if (event.type == SDL_LunaEvent) {
+						process_luna_event(_events[event.user.code]);
+					}
+				}
+				
+				int numkeys;
+				const unsigned char *keys = SDL_GetKeyboardState(&numkeys);
+				for (int i = 0; i < 256; ++i) {
+					// int keycode = SDL_GetKeyFromScancode(i);
+					update_digital_button(&rain.keys[i], keys[i]);
+				}
+			}
+
+			// if (rain.keys[SDL_GetScancodeFromKey('W')].pressed) printf("KEY PRESSED\n");
+
 			rain_poll_time(&rain);
 
 			if (rain.quit) {
@@ -159,58 +277,6 @@ struct Engine {
 			glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
-
-			while (atomic_fetch32(&_event_count) > 0) {
-				LunaEvent *e = &_events[_event_process_index];
-				// printf("luna event %i \n", e->type);
-				switch (e->type) {
-					case EVENT_DRAW_LINE:
-						draw_line(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y);
-						break;
-					case EVENT_DRAW_TRIANGLE:
-						draw_triangle(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y, e->draw.pos3.x, e->draw.pos3.y);
-						break;
-					case EVENT_DRAW_LINE_TRIANGLE:
-						draw_line_triangle(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y, e->draw.pos3.x, e->draw.pos3.y);
-						break;
-					case EVENT_DRAW_RECT:
-						draw_rect(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
-						break;
-					case EVENT_DRAW_LINE_RECT:
-						draw_line_rect(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
-						break;
-					case EVENT_SET_TEX_COORDS:
-						set_tex_coords(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y, e->draw.pos3.x, e->draw.pos3.y, e->draw.pos4.x, e->draw.pos4.y);
-						break;
-					case EVENT_DRAW_RECT_TEXTURE:
-						draw_rect_texture(e->draw.texture, e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
-						break;
-					case EVENT_DRAW_CIRCLE:
-						draw_circle(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
-						break;
-					case EVENT_DRAW_LINE_CIRCLE:
-						draw_line_circle(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
-						break;
-					case EVENT_SET_COLOR:
-						glColor4f(e->draw.color.r, e->draw.color.g, e->draw.color.b, e->draw.color.a);
-						break;
-					case EVENT_LOAD_TEXTURE:
-						textures[e->draw.texture].tex = _load_texture(textures[e->draw.texture].file);
-						break;
-					case EVENT_ROTATE:
-						rotate(e->draw.amount);
-						break;
-					case EVENT_CLEAR_RECT:
-						clear_rect(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
-						break;
-					case EVENT_CLEAR_COLOR:
-						_clear_color = {e->draw.color.r, e->draw.color.g, e->draw.color.b, e->draw.color.a};
-						break;
-				}
-
-				++_event_process_index %= array_size(_events);
-				atomic_sub32(&_event_count, 1);
-			}
 
 			rain_swap_buffers(&rain);
 			// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -270,108 +336,108 @@ int lua_update(lua_State* l) {
 	return 0;
 }
 
-int lua_get_input(lua_State* l) {
-	_engine.lua.set_table_table_number("window", "size", "x", _engine.rain.window_width);
-	_engine.lua.set_table_table_number("window", "size", "y", _engine.rain.window_height);
+// int lua_get_input(lua_State* l) {
+// 	_engine.lua.set_table_table_number("window", "size", "x", _engine.rain.window_width);
+// 	_engine.lua.set_table_table_number("window", "size", "y", _engine.rain.window_height);
 
-	double time_lua_state = GetSeconds();
-	_engine.lua.set_table_table_number("mouse", "position", "x", _engine.rain.mouse.position.x);
-	_engine.lua.set_table_table_number("mouse", "position", "y", _engine.rain.mouse.position.y);
-	_engine.lua.set_table_table_number("mouse", "position_delta", "x", _engine.rain.mouse.position_delta.x);
-	_engine.lua.set_table_table_number("mouse", "position_delta", "y", _engine.rain.mouse.position_delta.y);
+// 	double time_lua_state = GetSeconds();
+// 	_engine.lua.set_table_table_number("mouse", "position", "x", _engine.rain.mouse.position.x);
+// 	_engine.lua.set_table_table_number("mouse", "position", "y", _engine.rain.mouse.position.y);
+// 	_engine.lua.set_table_table_number("mouse", "position_delta", "x", _engine.rain.mouse.position_delta.x);
+// 	_engine.lua.set_table_table_number("mouse", "position_delta", "y", _engine.rain.mouse.position_delta.y);
 
-	_engine.lua.set_table_table_bool("mouse", "left", "down", _engine.rain.mouse.left.down);
-	_engine.lua.set_table_table_bool("mouse", "left", "pressed", _engine.rain.mouse.left.pressed);
-	_engine.lua.set_table_table_bool("mouse", "left", "released", _engine.rain.mouse.left.released);
+// 	_engine.lua.set_table_table_bool("mouse", "left", "down", _engine.rain.mouse.left.down);
+// 	_engine.lua.set_table_table_bool("mouse", "left", "pressed", _engine.rain.mouse.left.pressed);
+// 	_engine.lua.set_table_table_bool("mouse", "left", "released", _engine.rain.mouse.left.released);
 
-	_engine.lua.set_table_table_bool("mouse", "right", "down", _engine.rain.mouse.right.down);
-	_engine.lua.set_table_table_bool("mouse", "right", "pressed", _engine.rain.mouse.right.pressed);
-	_engine.lua.set_table_table_bool("mouse", "right", "released", _engine.rain.mouse.right.released);
+// 	_engine.lua.set_table_table_bool("mouse", "right", "down", _engine.rain.mouse.right.down);
+// 	_engine.lua.set_table_table_bool("mouse", "right", "pressed", _engine.rain.mouse.right.pressed);
+// 	_engine.lua.set_table_table_bool("mouse", "right", "released", _engine.rain.mouse.right.released);
 
-	_engine.lua.set_table_table_bool("mouse", "middle", "down", _engine.rain.mouse.middle.down);
-	_engine.lua.set_table_table_bool("mouse", "middle", "pressed", _engine.rain.mouse.middle.pressed);
-	_engine.lua.set_table_table_bool("mouse", "middle", "released", _engine.rain.mouse.middle.released);
+// 	_engine.lua.set_table_table_bool("mouse", "middle", "down", _engine.rain.mouse.middle.down);
+// 	_engine.lua.set_table_table_bool("mouse", "middle", "pressed", _engine.rain.mouse.middle.pressed);
+// 	_engine.lua.set_table_table_bool("mouse", "middle", "released", _engine.rain.mouse.middle.released);
 
-	_engine.lua.set_table_number("mouse", "wheel_delta", _engine.rain.mouse.wheel_delta);
+// 	_engine.lua.set_table_number("mouse", "wheel_delta", _engine.rain.mouse.wheel_delta);
 
-	{
-		_engine.lua.set_table_table_digital_button("keyboard", "n1", _engine.rain.keys[KEY_1]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n2", _engine.rain.keys[KEY_2]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n3", _engine.rain.keys[KEY_3]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n4", _engine.rain.keys[KEY_4]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n5", _engine.rain.keys[KEY_5]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n6", _engine.rain.keys[KEY_6]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n7", _engine.rain.keys[KEY_7]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n8", _engine.rain.keys[KEY_8]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n9", _engine.rain.keys[KEY_9]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n0", _engine.rain.keys[KEY_0]);
-		_engine.lua.set_table_table_digital_button("keyboard", "a", _engine.rain.keys[KEY_A]);
-		_engine.lua.set_table_table_digital_button("keyboard", "b", _engine.rain.keys[KEY_B]);
-		_engine.lua.set_table_table_digital_button("keyboard", "c", _engine.rain.keys[KEY_C]);
-		_engine.lua.set_table_table_digital_button("keyboard", "d", _engine.rain.keys[KEY_D]);
-		_engine.lua.set_table_table_digital_button("keyboard", "e", _engine.rain.keys[KEY_E]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f", _engine.rain.keys[KEY_F]);
-		_engine.lua.set_table_table_digital_button("keyboard", "g", _engine.rain.keys[KEY_G]);
-		_engine.lua.set_table_table_digital_button("keyboard", "h", _engine.rain.keys[KEY_H]);
-		_engine.lua.set_table_table_digital_button("keyboard", "i", _engine.rain.keys[KEY_I]);
-		_engine.lua.set_table_table_digital_button("keyboard", "j", _engine.rain.keys[KEY_J]);
-		_engine.lua.set_table_table_digital_button("keyboard", "k", _engine.rain.keys[KEY_K]);
-		_engine.lua.set_table_table_digital_button("keyboard", "l", _engine.rain.keys[KEY_L]);
-		_engine.lua.set_table_table_digital_button("keyboard", "m", _engine.rain.keys[KEY_M]);
-		_engine.lua.set_table_table_digital_button("keyboard", "n", _engine.rain.keys[KEY_N]);
-		_engine.lua.set_table_table_digital_button("keyboard", "o", _engine.rain.keys[KEY_O]);
-		_engine.lua.set_table_table_digital_button("keyboard", "p", _engine.rain.keys[KEY_P]);
-		_engine.lua.set_table_table_digital_button("keyboard", "q", _engine.rain.keys[KEY_Q]);
-		_engine.lua.set_table_table_digital_button("keyboard", "r", _engine.rain.keys[KEY_R]);
-		_engine.lua.set_table_table_digital_button("keyboard", "s", _engine.rain.keys[KEY_S]);
-		_engine.lua.set_table_table_digital_button("keyboard", "t", _engine.rain.keys[KEY_T]);
-		_engine.lua.set_table_table_digital_button("keyboard", "u", _engine.rain.keys[KEY_U]);
-		_engine.lua.set_table_table_digital_button("keyboard", "v", _engine.rain.keys[KEY_V]);
-		_engine.lua.set_table_table_digital_button("keyboard", "w", _engine.rain.keys[KEY_W]);
-		_engine.lua.set_table_table_digital_button("keyboard", "x", _engine.rain.keys[KEY_X]);
-		_engine.lua.set_table_table_digital_button("keyboard", "y", _engine.rain.keys[KEY_Y]);
-		_engine.lua.set_table_table_digital_button("keyboard", "z", _engine.rain.keys[KEY_Z]);
+// 	{
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n1", _engine.rain.keys[KEY_1]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n2", _engine.rain.keys[KEY_2]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n3", _engine.rain.keys[KEY_3]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n4", _engine.rain.keys[KEY_4]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n5", _engine.rain.keys[KEY_5]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n6", _engine.rain.keys[KEY_6]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n7", _engine.rain.keys[KEY_7]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n8", _engine.rain.keys[KEY_8]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n9", _engine.rain.keys[KEY_9]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n0", _engine.rain.keys[KEY_0]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "a", _engine.rain.keys[KEY_A]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "b", _engine.rain.keys[KEY_B]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "c", _engine.rain.keys[KEY_C]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "d", _engine.rain.keys[KEY_D]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "e", _engine.rain.keys[KEY_E]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f", _engine.rain.keys[KEY_F]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "g", _engine.rain.keys[KEY_G]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "h", _engine.rain.keys[KEY_H]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "i", _engine.rain.keys[KEY_I]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "j", _engine.rain.keys[KEY_J]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "k", _engine.rain.keys[KEY_K]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "l", _engine.rain.keys[KEY_L]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "m", _engine.rain.keys[KEY_M]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "n", _engine.rain.keys[KEY_N]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "o", _engine.rain.keys[KEY_O]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "p", _engine.rain.keys[KEY_P]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "q", _engine.rain.keys[KEY_Q]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "r", _engine.rain.keys[KEY_R]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "s", _engine.rain.keys[KEY_S]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "t", _engine.rain.keys[KEY_T]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "u", _engine.rain.keys[KEY_U]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "v", _engine.rain.keys[KEY_V]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "w", _engine.rain.keys[KEY_W]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "x", _engine.rain.keys[KEY_X]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "y", _engine.rain.keys[KEY_Y]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "z", _engine.rain.keys[KEY_Z]);
 
-		_engine.lua.set_table_table_digital_button("keyboard", "left", _engine.rain.keys[KEY_LEFT]);
-		_engine.lua.set_table_table_digital_button("keyboard", "right", _engine.rain.keys[KEY_RIGHT]);
-		_engine.lua.set_table_table_digital_button("keyboard", "up", _engine.rain.keys[KEY_UP]);
-		_engine.lua.set_table_table_digital_button("keyboard", "down", _engine.rain.keys[KEY_DOWN]);
-		_engine.lua.set_table_table_digital_button("keyboard", "lcontrol", _engine.rain.keys[KEY_LCTRL]);
-		_engine.lua.set_table_table_digital_button("keyboard", "rcontrol", _engine.rain.keys[KEY_RCTRL]);
-		_engine.lua.set_table_table_digital_button("keyboard", "control", _engine.rain.keys[KEY_CTRL]);
-		_engine.lua.set_table_table_digital_button("keyboard", "lshift", _engine.rain.keys[KEY_LSHIFT]);
-		_engine.lua.set_table_table_digital_button("keyboard", "rshift", _engine.rain.keys[KEY_RSHIFT]);
-		_engine.lua.set_table_table_digital_button("keyboard", "shift", _engine.rain.keys[KEY_SHIFT]);
-		_engine.lua.set_table_table_digital_button("keyboard", "alt", _engine.rain.keys[KEY_ALT]);
-		_engine.lua.set_table_table_digital_button("keyboard", "caps", _engine.rain.keys[KEY_CAPS]);
-		_engine.lua.set_table_table_digital_button("keyboard", "tab", _engine.rain.keys[KEY_TAB]);
-		_engine.lua.set_table_table_digital_button("keyboard", "space", _engine.rain.keys[KEY_SPACE]);
-		_engine.lua.set_table_table_digital_button("keyboard", "enter", _engine.rain.keys[KEY_RETURN]);
-		_engine.lua.set_table_table_digital_button("keyboard", "backspace", _engine.rain.keys[KEY_BACKSPACE]);
-		_engine.lua.set_table_table_digital_button("keyboard", "escape", _engine.rain.keys[KEY_ESCAPE]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f1", _engine.rain.keys[KEY_F1]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f2", _engine.rain.keys[KEY_F2]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f3", _engine.rain.keys[KEY_F3]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f4", _engine.rain.keys[KEY_F4]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f5", _engine.rain.keys[KEY_F5]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f6", _engine.rain.keys[KEY_F6]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f7", _engine.rain.keys[KEY_F7]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f8", _engine.rain.keys[KEY_F8]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f9", _engine.rain.keys[KEY_F9]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f10", _engine.rain.keys[KEY_F10]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f11", _engine.rain.keys[KEY_F11]);
-		_engine.lua.set_table_table_digital_button("keyboard", "f12", _engine.rain.keys[KEY_F12]);
-	}
+// 		_engine.lua.set_table_table_digital_button("keyboard", "left", _engine.rain.keys[KEY_LEFT]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "right", _engine.rain.keys[KEY_RIGHT]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "up", _engine.rain.keys[KEY_UP]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "down", _engine.rain.keys[KEY_DOWN]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "lcontrol", _engine.rain.keys[KEY_LCTRL]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "rcontrol", _engine.rain.keys[KEY_RCTRL]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "control", _engine.rain.keys[KEY_CTRL]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "lshift", _engine.rain.keys[KEY_LSHIFT]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "rshift", _engine.rain.keys[KEY_RSHIFT]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "shift", _engine.rain.keys[KEY_SHIFT]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "alt", _engine.rain.keys[KEY_ALT]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "caps", _engine.rain.keys[KEY_CAPS]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "tab", _engine.rain.keys[KEY_TAB]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "space", _engine.rain.keys[KEY_SPACE]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "enter", _engine.rain.keys[KEY_RETURN]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "backspace", _engine.rain.keys[KEY_BACKSPACE]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "escape", _engine.rain.keys[KEY_ESCAPE]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f1", _engine.rain.keys[KEY_F1]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f2", _engine.rain.keys[KEY_F2]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f3", _engine.rain.keys[KEY_F3]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f4", _engine.rain.keys[KEY_F4]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f5", _engine.rain.keys[KEY_F5]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f6", _engine.rain.keys[KEY_F6]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f7", _engine.rain.keys[KEY_F7]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f8", _engine.rain.keys[KEY_F8]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f9", _engine.rain.keys[KEY_F9]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f10", _engine.rain.keys[KEY_F10]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f11", _engine.rain.keys[KEY_F11]);
+// 		_engine.lua.set_table_table_digital_button("keyboard", "f12", _engine.rain.keys[KEY_F12]);
+// 	}
 
-	_engine.lua.set_table_number("time", "dt", _engine.rain.dt);
-	_engine.lua.set_table_number("time", "seconds", _engine.rain.time_s);
-	time_lua_state = GetSeconds() - time_lua_state;
+// 	_engine.lua.set_table_number("time", "dt", _engine.rain.dt);
+// 	_engine.lua.set_table_number("time", "seconds", _engine.rain.time_s);
+// 	time_lua_state = GetSeconds() - time_lua_state;
 	
-	return 0;
-}
+// 	return 0;
+// }
 
 int lua_swap_buffers(lua_State* l) {
-	rain_swap_buffers(&_engine.rain);
+	rain_swap_buffers(&rain);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -410,5 +476,28 @@ int lua_file_request(lua_State *l) {
 int lua_get_seconds(lua_State *l) {
 	double s = GetSeconds();
 	lua_pushnumber(l, s);
+	return 1;
+}
+
+int lua_key_state(lua_State *l) {
+	char *str = (char*)lua_tostring(l, 1);
+	if (!str) return 0;
+	// printf("%s\n", str);
+
+	bool down = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].down);
+	bool pressed = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].pressed);
+	bool released = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].released);
+
+	lua_newtable(l);
+	lua_pushstring(l, "down");
+	lua_pushboolean(l, down);
+	lua_settable(l, -3);
+	lua_pushstring(l, "pressed");
+	lua_pushboolean(l, pressed);
+	lua_settable(l, -3);
+	lua_pushstring(l, "released");
+	lua_pushboolean(l, released);
+	lua_settable(l, -3);
+
 	return 1;
 }

@@ -34,6 +34,8 @@ struct LunaEvent {
 	} sys;
 };
 
+int SDL_LunaEvent;
+
 LunaEvent _events[256];
 int _event_insert_index = 0; // lua thread
 int _event_process_index = 0; // engine thread
@@ -42,9 +44,13 @@ int _event_count = 0; // both threads
 void push_event(LunaEvent event) {
 	// todo: critical section
 	if (atomic_fetch32(&_event_count) < array_size(_events)) {
+		SDL_Event sdl_event = {};
+		sdl_event.type = SDL_LunaEvent;
+		sdl_event.user.code = _event_insert_index;
 		_events[_event_insert_index++] = event;
 		_event_insert_index %= array_size(_events);
 		atomic_add32(&_event_count, 1);
+		SDL_PushEvent(&sdl_event);
 	} else {
 		printf("ran out of event memory! \n");
 	}

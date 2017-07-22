@@ -34,6 +34,9 @@ while true do
 	rotate(r)
 	draw_rect_texture(texture, 300, 100, 250, 250)
 
+	local kw = key_state('w')
+	print("down " .. (kw.down and "true" or "false"), "pressed " .. (kw.pressed and "true" or "false"))
+
 	r = r + 0.05
 
 	sleep(16)
