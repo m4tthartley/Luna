@@ -17,6 +17,8 @@ float2 _tex_coords[4] = {
 
 float current_rotation = 0.0f;
 
+float4 _clear_color = {0, 0, 0, 1};
+
 void draw_line(float x, float y, float x2, float y2) {
 	glBegin(GL_LINES);
 	glVertex2f(x, y);
@@ -211,6 +213,23 @@ void rotate(float rads) {
 	current_rotation = rads;
 }
 
+void clear_rect(float x, float y, float width, float height) {
+	float w = width/2.0f;
+	float h = height/2.0f;
+	glPushAttrib(GL_CURRENT_BIT);
+	glColor4f(_clear_color.r, _clear_color.g, _clear_color.b, _clear_color.a);
+	glPushMatrix();
+	glTranslatef(x + w, y + h, 0.0f);
+	glBegin(GL_QUADS);
+	glVertex3f(-w, -h, 0);
+	glVertex3f(w, -h, 0);
+	glVertex3f(w, h, 0);
+	glVertex3f(-w, h, 0);
+	glEnd();
+	glPopMatrix();
+	glPopAttrib();
+}
+
 //////////////////////////////
 
 int lua_draw_line(lua_State* l) {
@@ -219,7 +238,12 @@ int lua_draw_line(lua_State* l) {
 	float x2 = lua_tonumber(l, 3);
 	float y2 = lua_tonumber(l, 4);
 
-	draw_line(x, y, x2, y2);
+	// draw_line(x, y, x2, y2);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_LINE;
+	event.draw.pos = {x, y};
+	event.draw.pos2 = {x2, y2};
+	push_event(event);
 
 	return 0;
 }
@@ -232,7 +256,13 @@ int lua_draw_triangle(lua_State* l) {
 	float x3 = lua_tonumber(l, 5);
 	float y3 = lua_tonumber(l, 6);
 
-	draw_triangle(x1, y1, x2, y2, x3, y3);
+	// draw_triangle(x1, y1, x2, y2, x3, y3);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_TRIANGLE;
+	event.draw.pos = {x1, y1};
+	event.draw.pos2 = {x2, y2};
+	event.draw.pos3 = {x3, y3};
+	push_event(event);
 
 	return 0;
 }
@@ -245,7 +275,13 @@ int lua_draw_line_triangle(lua_State* l) {
 	float x3 = lua_tonumber(l, 5);
 	float y3 = lua_tonumber(l, 6);
 
-	draw_line_triangle(x1, y1, x2, y2, x3, y3);
+	// draw_line_triangle(x1, y1, x2, y2, x3, y3);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_LINE_TRIANGLE;
+	event.draw.pos = {x1, y1};
+	event.draw.pos2 = {x2, y2};
+	event.draw.pos3 = {x3, y3};
+	push_event(event);
 
 	return 0;
 }
@@ -259,7 +295,12 @@ int lua_draw_rect(lua_State* l) {
 	// lua_pushstring(l, "Error in draw_rect");
 	// lua_error(l);
 
-	draw_rect(x, y, width, height);
+	// draw_rect(x, y, width, height);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_RECT;
+	event.draw.pos = {x, y};
+	event.draw.size = {width, height};
+	push_event(event);
 
 	return 0;
 }
@@ -270,7 +311,12 @@ int lua_draw_line_rect(lua_State* l) {
 	float width = lua_tonumber(l, 3);
 	float height = lua_tonumber(l, 4);
 
-	draw_line_rect(x, y, width, height);
+	// draw_line_rect(x, y, width, height);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_LINE_RECT;
+	event.draw.pos = {x, y};
+	event.draw.size = {width, height};
+	push_event(event);
 
 	return 0;
 }
@@ -285,7 +331,14 @@ int lua_set_tex_coords(lua_State* l) {
 	float x4 = lua_tonumber(l, 7);
 	float y4 = lua_tonumber(l, 8);
 
-	set_tex_coords(x1, y1, x2, y2, x3, y3, x4, y4);
+	// set_tex_coords(x1, y1, x2, y2, x3, y3, x4, y4);
+	LunaEvent event = {};
+	event.type = EVENT_SET_TEX_COORDS;
+	event.draw.pos = {x1, y1};
+	event.draw.pos2 = {x2, y2};
+	event.draw.pos3 = {x3, y3};
+	event.draw.pos4 = {x4, y4};
+	push_event(event);
 
 	return 0;
 }
@@ -297,7 +350,13 @@ int lua_draw_rect_texture(lua_State* l) {
 	float width = lua_tonumber(l, 4);
 	float height = lua_tonumber(l, 5);
 
-	draw_rect_texture(texture, x, y, width, height);
+	// draw_rect_texture(texture, x, y, width, height);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_RECT_TEXTURE;
+	event.draw.texture = texture;
+	event.draw.pos = {x, y};
+	event.draw.size = {width, height};
+	push_event(event);
 
 	return 0;
 }
@@ -308,16 +367,29 @@ int lua_set_color(lua_State* l) {
 	float b = lua_tonumber(l, 3);
 	float a = lua_tonumber(l, 4);
 
-	glColor4f(r, g, b, a);
+	// glColor4f(r, g, b, a);
+	LunaEvent event = {};
+	event.type = EVENT_SET_COLOR;
+	event.draw.color = {r, g, b, a};
+	push_event(event);
 
 	return 0;
 }
 
 int lua_load_texture(lua_State* l) {
 	char *file = (char*)lua_tostring(l, 1);
-	unsigned int number = load_texture(file);
-	lua_pushnumber(l, number);
+	// unsigned int number = load_texture(file);
 
+	// todo: make sure texture_count isn't being used non-atomicly anywhere
+	int index = atomic_add32(&texture_count, 1);
+	strcpy(textures[index].file, file);
+
+	LunaEvent event = {};
+	event.type = EVENT_LOAD_TEXTURE;
+	event.draw.texture = index;
+	push_event(event);
+
+	lua_pushnumber(l, index);
 	return 1;
 }
 
@@ -327,7 +399,12 @@ int lua_draw_circle(lua_State* l) {
 	float width = lua_tonumber(l, 3);
 	float height = lua_tonumber(l, 4);
 
-	draw_circle(x, y, width, height);
+	// draw_circle(x, y, width, height);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_CIRCLE;
+	event.draw.pos = {x, y};
+	event.draw.size = {width, height};
+	push_event(event);
 
 	return 0;
 }
@@ -338,13 +415,52 @@ int lua_draw_line_circle(lua_State* l) {
 	float width = lua_tonumber(l, 3);
 	float height = lua_tonumber(l, 4);
 
-	draw_line_circle(x, y, width, height);
+	// draw_line_circle(x, y, width, height);
+	LunaEvent event = {};
+	event.type = EVENT_DRAW_LINE_CIRCLE;
+	event.draw.pos = {x, y};
+	event.draw.size = {width, height};
+	push_event(event);
 
 	return 0;
 }
 
 int lua_rotate(lua_State* l) {
 	float rads = lua_tonumber(l, 1);
-	rotate(rads);
+	// rotate(rads);
+	LunaEvent event = {};
+	event.type = EVENT_ROTATE;
+	event.draw.amount = rads;
+	push_event(event);
+
+	return 0;
+}
+
+int lua_clear_rect(lua_State *l) {
+	float x = lua_tonumber(l, 1);
+	float y = lua_tonumber(l, 2);
+	float width = lua_tonumber(l, 3);
+	float height = lua_tonumber(l, 4);
+
+	LunaEvent event = {};
+	event.type = EVENT_CLEAR_RECT;
+	event.draw.pos = {x, y};
+	event.draw.size = {width, height};
+	push_event(event);
+
+	return 0;
+}
+
+int lua_clear_color(lua_State *l) {
+	float r = lua_tonumber(l, 1);
+	float g = lua_tonumber(l, 2);
+	float b = lua_tonumber(l, 3);
+	float a = lua_tonumber(l, 4);
+
+	LunaEvent event = {};
+	event.type = EVENT_CLEAR_COLOR;
+	event.draw.color = {r, g, b, a};
+	push_event(event);
+
 	return 0;
 }

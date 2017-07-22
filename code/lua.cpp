@@ -386,6 +386,8 @@ void Lua::registerTables() {
 	create_lua_func("set_color", lua_set_color);
 	create_lua_func("load_texture", lua_load_texture);
 	create_lua_func("rotate", lua_rotate);
+	create_lua_func("clear_rect", lua_clear_rect);
+	create_lua_func("clear_color", lua_clear_color);
 
 	create_lua_func("draw_font", lua_draw_font);
 	create_lua_func("font_dimensions", lua_font_dimensions);

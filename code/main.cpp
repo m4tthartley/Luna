@@ -12,6 +12,7 @@
 #pragma GCC diagnostic ignored "-Wempty-body"
 
 #include "../../libs/rain.c"
+#include "../../libs/sys.c"
 
 #include "types.h"
 
@@ -164,6 +165,8 @@ FileResult load_universal_file(char *file) {
 		return {mem, _file_buffer_size};
 	}
 }
+
+#include "events.c"
 
 #include "draw.cpp"
 #include "font.cpp"

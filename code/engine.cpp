@@ -1,40 +1,33 @@
 
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
 
-enum EventType {
-	EVENT_DRAW_LINE,
-	EVENT_DRAW_TRIANGLE,
-	EVENT_DRAW_LINE_TRIANGLE,
-	EVENT_DRAW_RECT,
-	EVENT_DRAW_LINE_RECT,
-	EVENT_SET_TEX_COORDS,
-	EVENT_DRAW_RECT_TEXTURE,
-	EVENT_DRAW_CIRCLE,
-	EVENT_DRAW_LINE_CIRCLE,
-	EVENT_SET_COLOR,
-	EVENT_LOAD_TEXTURE,
-	EVENT_ROTATE,
-};
-struct LunaEvent {
-	EventType type;
-	union {
-		float2 pos;
-		float2 pos2;
-		float2 pos3;
-		float2 pos4;
-		int texture;
-		char *file;
-		float amount;
-		float scale;
-	} params;
-};
-
 static int mousex;
 static int mousey;
 static int fps;
 static int tps;
 static int qps;
 static void addqps(int num) { qps += num; }
+
+void lua_thread(void *arg) {
+	// do {
+	// 	if (reload) {
+	// 		for (int i = 0; i < texture_count; ++i) {
+	// 			glDeleteTextures(1, &textures[i].tex);
+	// 		}
+	// 		texture_count = 0;
+	// 		lua_close(lua.l);
+	// 		lua = {};
+	// 		lua.init(_address);
+	// 		lua.appFunc("init");
+	// 		reload = false;
+	// 	}
+	// 	lua.appFunc("run");
+	// } while (reload);
+
+	Lua *lua = (Lua*)arg;
+	*lua = {};
+	lua->init(_address);
+}
 
 struct Engine {
 
@@ -68,11 +61,12 @@ struct Engine {
 	Rain rain = {};
 
 	void run() {
-		lua.init(_address);
-		lua.appFunc("init");
+		// lua.init(_address);
+		// lua.appFunc("init");
 		/*if (lua.get_table_table_var("window", "size", "x")) rain.window_width = lua_tonumber(lua.l, -1);
 		if (lua.get_table_table_var("window", "size", "y")) rain.window_height = lua_tonumber(lua.l, -1);*/
-		rain.window_title = lua.get_table_var("window", "title");
+
+		// rain.window_title = lua.get_table_var("window", "title");
 
 		rain.multisample_window = true;
 		rain_init(&rain);
@@ -105,20 +99,122 @@ struct Engine {
 
 		init_font_system();
 
-		do {
-			if (reload) {
-				for (int i = 0; i < texture_count; ++i) {
-					glDeleteTextures(1, &textures[i].tex);
-				}
-				texture_count = 0;
-				lua_close(lua.l);
-				lua = {};
-				lua.init(_address);
-				lua.appFunc("init");
-				reload = false;
+		create_thread(lua_thread, &lua);
+
+		while (!rain.quit) {
+			rain_poll_events(&rain);
+			rain_poll_time(&rain);
+
+			if (rain.quit) {
+				// Force the lua run loop to quit
+				// lua_pushstring(_engine.lua.l, "Quitting program...");
+				// lua_error(_engine.lua.l);
 			}
-			lua.appFunc("run");
-		} while (reload);
+
+			static bool reload_shortcut = false;
+		#ifdef _WIN32
+			if (GetAsyncKeyState(VK_CONTROL) && (GetAsyncKeyState('S') || GetAsyncKeyState('R'))) {
+				if (!reload_shortcut) {
+					/*for (int i = 0; i < texture_count; ++i) {
+						glDeleteTextures(1, &textures[i].tex);
+					}
+					texture_count = 0;
+					lua_close(lua.l);
+					lua = Lua(default_lua_file);
+					lua.appFunc("init");*/
+
+					_engine.reload = true;
+					// lua_pushstring(_engine.lua.l, "reloading...");
+					// lua_error(_engine.lua.l);
+				}
+				reload_shortcut = true;
+			} else {
+				reload_shortcut = false;
+			}
+		#endif
+		#ifdef __APPLE__
+			if ((rain.keys[KEY_CTRL].down || rain.keys[KEY_LGUI].down) && (rain.keys[KEY_S].pressed || rain.keys[KEY_R].pressed)) {
+				if (!reload_shortcut) {
+					// for (int i = 0; i < texture_count; ++i) {
+					// 	glDeleteTextures(1, &textures[i].tex);
+					// }
+					// texture_count = 0;
+					// lua_close(lua.l);
+					// lua = {};
+					// lua.init(address);
+					// lua.appFunc("init");
+					reload = true;
+					// lua_pushstring(_engine.lua.l, "reloading...");
+					// lua_error(_engine.lua.l);
+				}
+				reload_shortcut = true;
+			} else {
+				reload_shortcut = false;
+			}
+		#endif
+
+			glViewport(0, 0, rain.window_width, rain.window_height);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+
+			while (atomic_fetch32(&_event_count) > 0) {
+				LunaEvent *e = &_events[_event_process_index];
+				// printf("luna event %i \n", e->type);
+				switch (e->type) {
+					case EVENT_DRAW_LINE:
+						draw_line(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y);
+						break;
+					case EVENT_DRAW_TRIANGLE:
+						draw_triangle(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y, e->draw.pos3.x, e->draw.pos3.y);
+						break;
+					case EVENT_DRAW_LINE_TRIANGLE:
+						draw_line_triangle(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y, e->draw.pos3.x, e->draw.pos3.y);
+						break;
+					case EVENT_DRAW_RECT:
+						draw_rect(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
+						break;
+					case EVENT_DRAW_LINE_RECT:
+						draw_line_rect(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
+						break;
+					case EVENT_SET_TEX_COORDS:
+						set_tex_coords(e->draw.pos.x, e->draw.pos.y, e->draw.pos2.x, e->draw.pos2.y, e->draw.pos3.x, e->draw.pos3.y, e->draw.pos4.x, e->draw.pos4.y);
+						break;
+					case EVENT_DRAW_RECT_TEXTURE:
+						draw_rect_texture(e->draw.texture, e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
+						break;
+					case EVENT_DRAW_CIRCLE:
+						draw_circle(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
+						break;
+					case EVENT_DRAW_LINE_CIRCLE:
+						draw_line_circle(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
+						break;
+					case EVENT_SET_COLOR:
+						glColor4f(e->draw.color.r, e->draw.color.g, e->draw.color.b, e->draw.color.a);
+						break;
+					case EVENT_LOAD_TEXTURE:
+						textures[e->draw.texture].tex = _load_texture(textures[e->draw.texture].file);
+						break;
+					case EVENT_ROTATE:
+						rotate(e->draw.amount);
+						break;
+					case EVENT_CLEAR_RECT:
+						clear_rect(e->draw.pos.x, e->draw.pos.y, e->draw.size.x, e->draw.size.y);
+						break;
+					case EVENT_CLEAR_COLOR:
+						_clear_color = {e->draw.color.r, e->draw.color.g, e->draw.color.b, e->draw.color.a};
+						break;
+				}
+
+				++_event_process_index %= array_size(_events);
+				atomic_sub32(&_event_count, 1);
+			}
+
+			rain_swap_buffers(&rain);
+			// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
 
 #if 0
 		//		int test_font = LoadFont("Jellee-Roman.ttf", 1.5f);
@@ -169,63 +265,7 @@ struct Engine {
 Engine _engine;
 
 int lua_update(lua_State* l) {
-	rain_poll_events(&_engine.rain);
-	rain_poll_time(&_engine.rain);
-
-	if (_engine.rain.quit) {
-		// Force the lua run loop to quit
-		lua_pushstring(_engine.lua.l, "Quitting program...");
-		lua_error(_engine.lua.l);
-	}
-
-	static bool reload_shortcut = false;
-#ifdef _WIN32
-	if (GetAsyncKeyState(VK_CONTROL) && (GetAsyncKeyState('S') || GetAsyncKeyState('R'))) {
-		if (!reload_shortcut) {
-			/*for (int i = 0; i < texture_count; ++i) {
-				glDeleteTextures(1, &textures[i].tex);
-			}
-			texture_count = 0;
-			lua_close(lua.l);
-			lua = Lua(default_lua_file);
-			lua.appFunc("init");*/
-
-			_engine.reload = true;
-			lua_pushstring(_engine.lua.l, "reloading...");
-			lua_error(_engine.lua.l);
-		}
-		reload_shortcut = true;
-	} else {
-		reload_shortcut = false;
-	}
-#endif
-#ifdef __APPLE__
-	if ((_engine.rain.keys[KEY_CTRL].down || _engine.rain.keys[KEY_LGUI].down) && (_engine.rain.keys[KEY_S].pressed || _engine.rain.keys[KEY_R].pressed)) {
-		if (!reload_shortcut) {
-			// for (int i = 0; i < texture_count; ++i) {
-			// 	glDeleteTextures(1, &textures[i].tex);
-			// }
-			// texture_count = 0;
-			// lua_close(lua.l);
-			// lua = {};
-			// lua.init(address);
-			// lua.appFunc("init");
-			_engine.reload = true;
-			lua_pushstring(_engine.lua.l, "reloading...");
-			lua_error(_engine.lua.l);
-		}
-		reload_shortcut = true;
-	} else {
-		reload_shortcut = false;
-	}
-#endif
-
-	glViewport(0, 0, _engine.rain.window_width, _engine.rain.window_height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, _engine.rain.window_width, _engine.rain.window_height, 0, -100, 100);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	
 	
 	return 0;
 }
@@ -340,12 +380,17 @@ int lua_swap_buffers(lua_State* l) {
 
 int lua_sleep(lua_State *l) {
 	double t = lua_tonumber(l, 1);
+
 #ifdef __APPLE__
 	usleep(t * 1000.0);
 #endif
 #if _WIN32
 	Sleep(t);
 #endif
+	// LunaEvent event = {};
+	// event.type = EVENT_SLEEP;
+	// event.sys.time = t;
+	// push_event(event);
 
 	return 0;
 }
