@@ -243,7 +243,7 @@ int lua_draw_line(lua_State* l) {
 	event.type = EVENT_DRAW_LINE;
 	event.draw.pos = {x, y};
 	event.draw.pos2 = {x2, y2};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -262,7 +262,7 @@ int lua_draw_triangle(lua_State* l) {
 	event.draw.pos = {x1, y1};
 	event.draw.pos2 = {x2, y2};
 	event.draw.pos3 = {x3, y3};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -281,7 +281,7 @@ int lua_draw_line_triangle(lua_State* l) {
 	event.draw.pos = {x1, y1};
 	event.draw.pos2 = {x2, y2};
 	event.draw.pos3 = {x3, y3};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -300,7 +300,7 @@ int lua_draw_rect(lua_State* l) {
 	event.type = EVENT_DRAW_RECT;
 	event.draw.pos = {x, y};
 	event.draw.size = {width, height};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -316,7 +316,7 @@ int lua_draw_line_rect(lua_State* l) {
 	event.type = EVENT_DRAW_LINE_RECT;
 	event.draw.pos = {x, y};
 	event.draw.size = {width, height};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -338,7 +338,7 @@ int lua_set_tex_coords(lua_State* l) {
 	event.draw.pos2 = {x2, y2};
 	event.draw.pos3 = {x3, y3};
 	event.draw.pos4 = {x4, y4};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -356,7 +356,7 @@ int lua_draw_rect_texture(lua_State* l) {
 	event.draw.texture = texture;
 	event.draw.pos = {x, y};
 	event.draw.size = {width, height};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -371,7 +371,7 @@ int lua_set_color(lua_State* l) {
 	LunaEvent event = {};
 	event.type = EVENT_SET_COLOR;
 	event.draw.color = {r, g, b, a};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -387,7 +387,7 @@ int lua_load_texture(lua_State* l) {
 	LunaEvent event = {};
 	event.type = EVENT_LOAD_TEXTURE;
 	event.draw.texture = index;
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	lua_pushnumber(l, index);
 	return 1;
@@ -404,7 +404,7 @@ int lua_draw_circle(lua_State* l) {
 	event.type = EVENT_DRAW_CIRCLE;
 	event.draw.pos = {x, y};
 	event.draw.size = {width, height};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -420,7 +420,7 @@ int lua_draw_line_circle(lua_State* l) {
 	event.type = EVENT_DRAW_LINE_CIRCLE;
 	event.draw.pos = {x, y};
 	event.draw.size = {width, height};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -431,7 +431,7 @@ int lua_rotate(lua_State* l) {
 	LunaEvent event = {};
 	event.type = EVENT_ROTATE;
 	event.draw.amount = rads;
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -446,7 +446,7 @@ int lua_clear_rect(lua_State *l) {
 	event.type = EVENT_CLEAR_RECT;
 	event.draw.pos = {x, y};
 	event.draw.size = {width, height};
-	push_event(event);
+	command_queue.push_window_event(event);
 
 	return 0;
 }
@@ -460,7 +460,15 @@ int lua_clear_color(lua_State *l) {
 	LunaEvent event = {};
 	event.type = EVENT_CLEAR_COLOR;
 	event.draw.color = {r, g, b, a};
-	push_event(event);
+	command_queue.push_window_event(event);
+
+	return 0;
+}
+
+int lua_present(lua_State *l) {
+	LunaEvent event = {};
+	event.type = EVENT_PRESENT;
+	command_queue.push_window_event(event);
 
 	return 0;
 }

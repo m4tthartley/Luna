@@ -107,10 +107,12 @@ struct Engine {
 				case EVENT_CLEAR_COLOR:
 					_clear_color = {e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a};
 					break;
+				case EVENT_PRESENT:
+					rain_swap_buffers(&rain);
+					break;
 			}
 
-			++_event_process_index %= array_size(_events);
-			atomic_sub32(&_event_count, 1);
+			
 		// }
 	}
 
@@ -160,6 +162,13 @@ struct Engine {
 
 		create_thread(lua_thread, &lua);
 
+		// glViewport(0, 0, rain.window_width, rain.window_height);
+		// glMatrixMode(GL_PROJECTION);
+		// glLoadIdentity();
+		// glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
+		// glMatrixMode(GL_MODELVIEW);
+		// glLoadIdentity();
+
 		while (!rain.quit) {
 			{
 				rain.mouse.position_delta.x = 0;
@@ -179,11 +188,25 @@ struct Engine {
 						case SDL_QUIT:
 							rain.quit = true;
 							break;
-						case SDL_MOUSEBUTTONDOWN:
-							if (event.button.button == SDL_BUTTON_LEFT) update_digital_button(&rain.mouse.left, true);
-							if (event.button.button == SDL_BUTTON_RIGHT) update_digital_button(&rain.mouse.right, true);
-							if (event.button.button == SDL_BUTTON_MIDDLE) update_digital_button(&rain.mouse.middle, true);
-							break;
+						{case SDL_MOUSEBUTTONDOWN:
+							LunaEvent e = {};
+							e.type = EVENT_MOUSE_DOWN;
+
+							if (event.button.button == SDL_BUTTON_LEFT) {
+								update_digital_button(&rain.mouse.left, true);
+								e.input.mouse_button = 0;
+							}
+							if (event.button.button == SDL_BUTTON_RIGHT) {
+								update_digital_button(&rain.mouse.right, true);
+								e.input.mouse_button = 1;
+							}
+							if (event.button.button == SDL_BUTTON_MIDDLE) {
+								update_digital_button(&rain.mouse.middle, true);
+								e.input.mouse_button = 2;
+							}
+
+							input_queue.push_event(e);
+							break;}
 						case SDL_MOUSEBUTTONUP:
 							if (event.button.button == SDL_BUTTON_LEFT) update_digital_button(&rain.mouse.left, false);
 							if (event.button.button == SDL_BUTTON_RIGHT) update_digital_button(&rain.mouse.right, false);
@@ -207,7 +230,9 @@ struct Engine {
 					}
 
 					if (event.type == SDL_LunaEvent) {
-						process_luna_event(_events[event.user.code]);
+						LunaEvent e = command_queue.pull_event();
+						process_luna_event(e);
+						// printf("event %s\n", event_type_names[e.type]);
 					}
 				}
 				
@@ -271,15 +296,7 @@ struct Engine {
 			}
 		#endif
 
-			glViewport(0, 0, rain.window_width, rain.window_height);
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-
-			rain_swap_buffers(&rain);
-			// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			// rain_swap_buffers(&rain);
 		}
 
 #if 0
@@ -485,19 +502,24 @@ int lua_key_state(lua_State *l) {
 	// printf("%s\n", str);
 
 	bool down = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].down);
-	bool pressed = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].pressed);
-	bool released = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].released);
+	// bool pressed = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].pressed);
+	// bool released = atomic_fetch32((int*)&rain.keys[SDL_GetScancodeFromKey(*str)].released);
 
-	lua_newtable(l);
-	lua_pushstring(l, "down");
+	// lua_newtable(l);
+	// lua_pushstring(l, "down");
+	// lua_pushboolean(l, down);
+	// lua_settable(l, -3);
+	// lua_pushstring(l, "pressed");
+	// lua_pushboolean(l, pressed);
+	// lua_settable(l, -3);
+	// lua_pushstring(l, "released");
+	// lua_pushboolean(l, released);
+	// lua_settable(l, -3);
+
 	lua_pushboolean(l, down);
-	lua_settable(l, -3);
-	lua_pushstring(l, "pressed");
-	lua_pushboolean(l, pressed);
-	lua_settable(l, -3);
-	lua_pushstring(l, "released");
-	lua_pushboolean(l, released);
-	lua_settable(l, -3);
-
 	return 1;
+}
+
+int lua_next_event(lua_State *l) {
+	return 0;
 }

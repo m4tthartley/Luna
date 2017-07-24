@@ -389,6 +389,7 @@ void Lua::registerTables() {
 	create_lua_func("rotate", lua_rotate);
 	create_lua_func("clear_rect", lua_clear_rect);
 	create_lua_func("clear_color", lua_clear_color);
+	create_lua_func("present", lua_present);
 
 	create_lua_func("key_state", lua_key_state);
 
