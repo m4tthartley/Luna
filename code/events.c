@@ -36,6 +36,7 @@ char *event_type_names[] = {
 	"EVENT_PRESENT",
 };
 enum InputEventType {
+	EVENT_NONE,
 	EVENT_MOUSE_DOWN,
 	EVENT_MOUSE_UP,
 	EVENT_MOUSE_MOTION,
@@ -61,9 +62,9 @@ struct LunaEvent {
 		} sys;
 		struct {
 			int mouse_button;
-			float2 mouse_position;
+			int2 mouse_position;
 			int amount;
-			float2 window_size;
+			int2 window_size;
 		} input;
 	};
 };
@@ -84,7 +85,7 @@ struct EventQueue {
 			return true;
 		}
 
-		printf("ran out of event memory! \n");
+		printf("ran out of event memory! %i \n", event.type);
 		return false;
 	}
 
@@ -99,7 +100,7 @@ struct EventQueue {
 
 	LunaEvent pull_event() {
 		if (atomic_fetch32(&count) < 1) {
-			printf("Pulling an event when there ain't none! \n");
+			// printf("Pulling an event when there ain't none! \n");
 			return {};
 		}
 		LunaEvent e = events[pull_index];

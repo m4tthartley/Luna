@@ -166,15 +166,17 @@ FileResult load_universal_file(char *file) {
 	}
 }
 
-#include "events.c"
+#include "engine.h"
 
+#include "events.c"
 #include "draw.cpp"
 #include "font.cpp"
+#include "luna_api.c"
 
 #include "lua.h"
 #include "lua.cpp"
 
-#include "engine.h"
+
 #include "engine.cpp"
 
 //#include "audio.h"
