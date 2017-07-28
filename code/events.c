@@ -1,7 +1,8 @@
 
 int SDL_LunaEvent; // note: set during init
 
-enum DrawEventType {
+enum CommandEventType {
+	EVENT_COMMAND_NONE = 0,
 	EVENT_DRAW_LINE,
 	EVENT_DRAW_TRIANGLE,
 	EVENT_DRAW_LINE_TRIANGLE,
@@ -17,6 +18,9 @@ enum DrawEventType {
 	EVENT_CLEAR_RECT,
 	EVENT_CLEAR_COLOR,
 	EVENT_PRESENT,
+
+	EVENT_LOAD_FONT,
+	EVENT_DRAW_FONT,
 };
 char *event_type_names[] = {
 	"EVENT_DRAW_LINE",
@@ -36,7 +40,7 @@ char *event_type_names[] = {
 	"EVENT_PRESENT",
 };
 enum InputEventType {
-	EVENT_NONE,
+	EVENT_NONE = 0,
 	EVENT_MOUSE_DOWN,
 	EVENT_MOUSE_UP,
 	EVENT_MOUSE_MOTION,
@@ -56,6 +60,9 @@ struct LunaEvent {
 			float amount;
 			float2 size;
 			float4 color;
+			float scale;
+			char *file;
+			char *str;
 		} draw;
 		struct {
 			double time;

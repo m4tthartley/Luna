@@ -108,6 +108,13 @@ struct Engine {
 				case EVENT_PRESENT:
 					rain_swap_buffers(&rain);
 					break;
+
+				case EVENT_LOAD_FONT:
+					LoadFont(e.draw.file, e.draw.scale);
+					break;
+				case EVENT_DRAW_FONT:
+					_PushFont(e.draw.file, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.scale, {1, 1, 1, 1}, e.draw.size.x);
+					break;
 			}
 
 			
@@ -180,7 +187,8 @@ struct Engine {
 			rain.mouse.middle.released = false;
 			
 			SDL_Event event;
-			while (SDL_PollEvent(&event)) {
+			SDL_WaitEvent(&event);
+			do {
 				switch (event.type) {
 					case SDL_QUIT:
 						rain.quit = true;
@@ -248,11 +256,18 @@ struct Engine {
 						break;}
 				}
 
-				if (event.type == SDL_LunaEvent) {
-					LunaEvent e = command_queue.pull_event();
-					process_luna_event(e);
-					// printf("event %s\n", event_type_names[e.type]);
-				}
+				// if (event.type == SDL_LunaEvent) {
+				// 	LunaEvent e = command_queue.pull_event();
+				// 	process_luna_event(e);
+				// }
+			} while (SDL_PollEvent(&event));
+
+			printf("command events %i \n", atomic_fetch32(&command_queue.count));
+
+			LunaEvent e;
+			while ((e = command_queue.pull_event()).type != EVENT_NONE) {
+				// LunaEvent e = command_queue.pull_event();
+				process_luna_event(e);
 			}
 			
 			int numkeys;

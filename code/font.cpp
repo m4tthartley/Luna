@@ -37,6 +37,8 @@ struct FontCache {
 		float2 megaTextureOffset;
 		float2 megaTextureSize;
 	} glyphs[0xFF];
+
+	int loaded;
 };
 
 struct Font_Mega_Texture {
@@ -86,6 +88,8 @@ int LoadFont(char *File, float scale)
 		font->pixelGlyphScale = stbtt_ScaleForPixelHeight(&font->STBFontInfo, size);
 
 		strcpy(font->file, File);
+
+		atomic_swap32(&font->loaded, true);
 	} else {
 		return -1;
 	}
@@ -102,7 +106,13 @@ FontCache *GetFontCache(char *font_file, float size) {
 		}
 	}
 
-	return &fonts[LoadFont(font_file, size)];
+	LunaEvent e = {};
+	e.type = EVENT_LOAD_FONT;
+	e.draw.file = font_file;
+	e.draw.scale = size;
+	command_queue.push_event(e);
+	return NULL;
+	// return &fonts[LoadFont(font_file, size)];
 }
 
 //Font_Cache *cacheFont(render_state *renderState, asset_font *font, float scale) {
@@ -317,6 +327,7 @@ void _PushFont(char *font_file, char *Text, float3 p, float size, float4 c, floa
 	// FontCache *Font = &fonts[fontid];
 	FontCache *Font = GetFontCache(font_file, size);
 	if (!Font) return;
+	if (!atomic_fetch32(&Font->loaded)) return;
 
 	size = 1.0f;
 

@@ -87,6 +87,9 @@ while true do
 	rotate(r)
 	draw_rect_texture(texture, 300, 100, 250, 250)
 
+	draw_font("jellee.ttf", 2.0, "Hello World", 100, 400, 0)
+	draw_font("jellee.ttf", 4.0, "Hello World!!!", 100, 440, 0)
+
 	x = x + sx * 5
 	y = y + sy * 5
 	if x > 1280-50 then sx = -1 end

@@ -378,7 +378,16 @@ int lua_draw_font(lua_State* l) {
 	float y = lua_tonumber(l, 5);
 	float width = lua_tonumber(l, 6);
 
-	_PushFont(font_file, str, {x, y, 0}, size, {1, 1, 1, 1}, width);
+	// _PushFont(font_file, str, {x, y, 0}, size, {1, 1, 1, 1}, width);
+	LunaEvent e = {};
+	e.type = EVENT_DRAW_FONT;
+	e.draw.file = font_file;
+	e.draw.scale = size;
+	e.draw.str = str;
+	e.draw.pos.x = x;
+	e.draw.pos.y = y;
+	e.draw.size.x = width;
+	command_queue.push_event(e);
 
 	return 0;
 }
@@ -390,9 +399,9 @@ int lua_font_dimensions(lua_State* l) {
 	char *str = (char*)lua_tostring(l, 3);
 	float width = lua_tonumber(l, 4);
 
-	float2 dim = GetTextDim(font_file, str, size, width);
-	lua_pushnumber(l, dim.x);
-	lua_pushnumber(l, dim.y);
+	// float2 dim = GetTextDim(font_file, str, size, width);
+	// lua_pushnumber(l, dim.x);
+	// lua_pushnumber(l, dim.y);
 
 	return 2;
 }
