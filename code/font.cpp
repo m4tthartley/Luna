@@ -89,6 +89,11 @@ int LoadFont(char *File, float scale)
 
 		strcpy(font->file, File);
 
+		printf("font %s\n", File);
+		// printf("ascent %i\n", font->Ascent);
+		// printf("descent %i\n", font->Descent);
+		// printf("linegap %i\n", font->LineGap);
+
 		atomic_swap32(&font->loaded, true);
 	} else {
 		return -1;
@@ -226,8 +231,9 @@ float Font_GetAdvance(FontCache *font, char a, char b, float size)
 		Kern = (float)stbtt_GetCodepointKernAdvance(&font->STBFontInfo, a, b);
 	}
 
-	float GlyphAdvance = (float)font->glyphs[a].advanceWidth;
-	float Result = ((GlyphAdvance * font->glyphScale) + (Kern * font->glyphScale)) * size;
+	int GlyphAdvance;// = (float)font->glyphs[a].advanceWidth;
+	stbtt_GetCodepointHMetrics(&font->STBFontInfo, a, &GlyphAdvance, NULL);
+	float Result = (((float)GlyphAdvance * font->glyphScale) + (Kern * font->glyphScale)) * size;
 	return Result;
 }
 
@@ -238,6 +244,8 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 
 	// FontCache *Font = &fonts[fontid];
 	FontCache *Font = GetFontCache(font_file, size);
+	if (!Font) return {};
+	if (!atomic_fetch32(&Font->loaded)) return {};
 
 	size = 1.0f;
 
@@ -281,7 +289,8 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 
 					if (Advance+SearchAdvance > widthLimit-10.0f)
 					{
-						RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
+						RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size;
+
 						// ++RowsRendered;
 
 						Advance = 0.0f;
@@ -293,17 +302,19 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 				}
 			}
 
-			if (!Font->glyphs[*str].loaded) {
-				LoadFontGlyph(Font, *str);
-			}
+			// if (!Font->glyphs[*str].loaded) {
+			// 	LoadFontGlyph(Font, *str);
+			// }
 
-			float Kern = 0.0f;
-			if (*(str+1)) {
-				Kern = (float)stbtt_GetCodepointKernAdvance(&Font->STBFontInfo, *str, *(str+1));
-			}
+			// float Kern = 0.0f;
+			// if (*(str+1)) {
+			// 	Kern = (float)stbtt_GetCodepointKernAdvance(&Font->STBFontInfo, *str, *(str+1));
+			// }
 
-			float GlyphAdvance = (float)Font->glyphs[*str].advanceWidth;
-			Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * size /** Font->RenderScale*/;
+			// float GlyphAdvance = (float)Font->glyphs[*str].advanceWidth;
+			// Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * size /** Font->RenderScale*/;
+			Advance += Font_GetAdvance(Font, *str, *(str+1), size);
+
 			if (Advance > biggest_advance) biggest_advance = Advance;
 
 			LastChar = *str;
@@ -319,7 +330,7 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 }
 
 // int fontid, char *str, float2 s, float widthLimit
-void _PushFont(char *font_file, char *Text, float3 p, float size, float4 c, float BoundingBoxX = 0.0f, float *RenderedHeight = NULL)
+void draw_font(char *font_file, float size, char *Text, float3 p, float BoundingBoxX = 0.0f)
 {
 	/*asset_font *Font = GetFont(rstate->platform, rstate->Assets, assetID);
 	Font_Cache *fontCache = getFontCache(rstate->platform, rstate, assetID, s.y);*/
@@ -453,10 +464,10 @@ void _PushFont(char *font_file, char *Text, float3 p, float size, float4 c, floa
 	glDisable(GL_TEXTURE_2D);
 
 	// RowOffset += (Font->Ascent-Font->Descent) * Font->GlyphScale * s.y;
-	if (RenderedHeight)
-	{
-		*RenderedHeight = RowOffset;
-	}
+	// if (RenderedHeight)
+	// {
+	// 	*RenderedHeight = RowOffset;
+	// }
 
 	//PushFontCommand(RState, AssetID, p, s, c, glyphs, glyphCount, WorldSpace);
 }

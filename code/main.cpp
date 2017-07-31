@@ -129,6 +129,8 @@ FileResult load_universal_file(char *file) {
 		strcpy(address, file);
 	}
 
+	if (file[0] == '/') local_load = true;
+
 	if (local_load/*strlen(address) > 5 &&
 		address[0] == 'f' &&
 		address[1] == 'i' &&

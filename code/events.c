@@ -82,6 +82,7 @@ struct EventQueue {
 	int push_index = 0; // pushing thread
 	int pull_index = 0; // pulling thread
 	int count = 0; 		// both threads
+	int window_event = false; // both threads
 
 	bool push_event(LunaEvent event) {
 		if (atomic_fetch32(&count) < array_size(events)) {
@@ -98,10 +99,12 @@ struct EventQueue {
 
 	void push_window_event(LunaEvent event) {
 		if (push_event(event)) {
-			SDL_Event sdl_event = {};
-			sdl_event.type = SDL_LunaEvent;
-			// sdl_event.user.code = _event_insert_index;
-			SDL_PushEvent(&sdl_event);
+			if (atomic_compare_swap32(&window_event, false, true)) {
+				SDL_Event sdl_event = {};
+				sdl_event.type = SDL_LunaEvent;
+				// sdl_event.user.code = _event_insert_index;
+				SDL_PushEvent(&sdl_event);
+			}
 		}
 	}
 

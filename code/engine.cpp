@@ -8,7 +8,7 @@ static int tps;
 static int qps;
 static void addqps(int num) { qps += num; }
 
-void lua_thread(void *arg) {
+void lua_thread_proc(void *arg) {
 	// do {
 	// 	if (reload) {
 	// 		for (int i = 0; i < texture_count; ++i) {
@@ -46,6 +46,8 @@ struct Engine {
 	// char *default_lua_file = "main.lua";
 
 	bool reload = false;
+
+	Thread lua_thread;
 
 	/*Engine();
 	void run();
@@ -113,7 +115,7 @@ struct Engine {
 					LoadFont(e.draw.file, e.draw.scale);
 					break;
 				case EVENT_DRAW_FONT:
-					_PushFont(e.draw.file, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.scale, {1, 1, 1, 1}, e.draw.size.x);
+					draw_font(e.draw.file, e.draw.scale, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.size.x);
 					break;
 			}
 
@@ -165,7 +167,9 @@ struct Engine {
 			printf("SDL_RegisterEvents failed! \n");
 		}
 
-		create_thread(lua_thread, &lua);
+		LoadFont("/Library/Fonts/Courier New Bold.ttf", 1.0f);
+
+		lua_thread = create_thread(lua_thread_proc, &lua);
 
 		// glViewport(0, 0, rain.window_width, rain.window_height);
 		// glMatrixMode(GL_PROJECTION);
@@ -173,6 +177,11 @@ struct Engine {
 		// glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
 		// glMatrixMode(GL_MODELVIEW);
 		// glLoadIdentity();
+
+		int num_luna_events_we_got = 0;
+		int num_frames = 0;
+
+		SDL_GL_SetSwapInterval(0);
 
 		while (!rain.quit) {
 			rain.mouse.position_delta.x = 0;
@@ -254,19 +263,36 @@ struct Engine {
 								break;
 						}
 						break;}
+					{case SDL_KEYDOWN:
+						if ((rain.keys[KEY_CTRL].down || rain.keys[KEY_LGUI].down) && event.key.keysym.scancode == SDL_SCANCODE_R) {
+							destroy_thread(lua_thread);
+							for (int i = 0; i < texture_count; ++i) {
+								glDeleteTextures(1, &textures[i].tex);
+							}
+							texture_count = 0;
+							lua_close(lua.l);
+							lua = {};
+							lua_thread = create_thread(lua_thread_proc, &lua);
+						}
+						break;}
 				}
 
-				// if (event.type == SDL_LunaEvent) {
-				// 	LunaEvent e = command_queue.pull_event();
-				// 	process_luna_event(e);
-				// }
+				if (event.type == SDL_LunaEvent) {
+					// LunaEvent e = command_queue.pull_event();
+					// process_luna_event(e);
+				}
 			} while (SDL_PollEvent(&event));
 
-			printf("command events %i \n", atomic_fetch32(&command_queue.count));
+			// printf("command events %i \n", atomic_fetch32(&command_queue.count));
 
-			LunaEvent e;
-			while ((e = command_queue.pull_event()).type != EVENT_NONE) {
-				// LunaEvent e = command_queue.pull_event();
+			atomic_swap32(&command_queue.window_event, false);
+
+			// LunaEvent e;
+			// while ((e = command_queue.pull_event()).type != EVENT_NONE)
+			int event_count = atomic_fetch32(&command_queue.count);
+			// printf("events %i\n", event_count);
+			for (int i = 0; i < event_count; ++i) {
+				LunaEvent e = command_queue.pull_event();
 				process_luna_event(e);
 			}
 			
@@ -309,6 +335,7 @@ struct Engine {
 			}
 		#endif
 		#ifdef __APPLE__
+			#if 0
 			if ((rain.keys[KEY_CTRL].down || rain.keys[KEY_LGUI].down) && (rain.keys[KEY_S].pressed || rain.keys[KEY_R].pressed)) {
 				if (!reload_shortcut) {
 					// for (int i = 0; i < texture_count; ++i) {
@@ -322,14 +349,27 @@ struct Engine {
 					reload = true;
 					// lua_pushstring(_engine.lua.l, "reloading...");
 					// lua_error(_engine.lua.l);
+
+					destroy_thread(lua_thread);
+					for (int i = 0; i < texture_count; ++i) {
+						glDeleteTextures(1, &textures[i].tex);
+					}
+					texture_count = 0;
+					lua_close(lua.l);
+					lua = {};
+					lua_thread = create_thread(lua_thread_proc, &lua);
 				}
 				reload_shortcut = true;
 			} else {
 				reload_shortcut = false;
 			}
+			#endif
 		#endif
 
 			// rain_swap_buffers(&rain);
+
+			// ++num_frames;
+			// printf("frame %i\n", num_frames);
 		}
 
 #if 0

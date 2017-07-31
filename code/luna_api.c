@@ -387,7 +387,7 @@ int lua_draw_font(lua_State* l) {
 	e.draw.pos.x = x;
 	e.draw.pos.y = y;
 	e.draw.size.x = width;
-	command_queue.push_event(e);
+	command_queue.push_window_event(e);
 
 	return 0;
 }
@@ -399,11 +399,14 @@ int lua_font_dimensions(lua_State* l) {
 	char *str = (char*)lua_tostring(l, 3);
 	float width = lua_tonumber(l, 4);
 
-	// float2 dim = GetTextDim(font_file, str, size, width);
+	float2 dim = GetTextDim(font_file, str, size, width);
 	// lua_pushnumber(l, dim.x);
 	// lua_pushnumber(l, dim.y);
+	lua_newtable(l);
+	lua_pushstring(l, "x"); lua_pushnumber(l, dim.x); lua_settable(l, -3);
+	lua_pushstring(l, "y"); lua_pushnumber(l, dim.y); lua_settable(l, -3);
 
-	return 2;
+	return 1;
 }
 
 // int lua_load_font(lua_State* l) {

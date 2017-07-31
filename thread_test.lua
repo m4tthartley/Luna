@@ -1,5 +1,5 @@
 
-local tprint = loadstring(file_request("tprint.lua"))()
+local tprint = loadstring(file_request("url:mattsblog.net/tprint.lua"))()
 
 -- local event = next_event()
 -- local test = {
@@ -87,8 +87,17 @@ while true do
 	rotate(r)
 	draw_rect_texture(texture, 300, 100, 250, 250)
 
+	local dim = font_dimensions("jellee.ttf", 2.0, "Hello World", 0)
+	local dim2 = font_dimensions("jellee.ttf", 4.0, "Hello World!!!", 0)
+	set_color(0, 1, 0, 1)
+	draw_rect(100, 400, dim.x, dim.y)
+	set_color(1, 0, 1, 1)
+	draw_rect(100, 440, dim2.x, dim2.y)
+	set_color(1, 1, 1, 1)
 	draw_font("jellee.ttf", 2.0, "Hello World", 100, 400, 0)
 	draw_font("jellee.ttf", 4.0, "Hello World!!!", 100, 440, 0)
+
+	draw_font("jellee.ttf", 4.0, "Testing some lovely font rendering stuffs", 0, 0, 0)
 
 	x = x + sx * 5
 	y = y + sy * 5
