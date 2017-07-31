@@ -14,6 +14,7 @@
 #endif
 
 #include "../../libs/rain.c"
+#include "../../libs/sys.c"
 
 #include "types.h"
 
@@ -130,6 +131,8 @@ FileResult load_universal_file(char *file) {
 		strcpy(address, file);
 	}
 
+	if (file[0] == '/') local_load = true;
+
 	if (local_load/*strlen(address) > 5 &&
 		address[0] == 'f' &&
 		address[1] == 'i' &&
@@ -192,13 +195,17 @@ FileResult load_universal_file(char *file) {
 	}
 }
 
+#include "engine.h"
+
+#include "events.c"
 #include "draw.cpp"
 #include "font.cpp"
+#include "luna_api.c"
 
 #include "lua.h"
 #include "lua.cpp"
 
-#include "engine.h"
+
 #include "engine.cpp"
 
 //#include "audio.h"

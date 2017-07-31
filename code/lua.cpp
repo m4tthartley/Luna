@@ -156,10 +156,42 @@ void Lua::init(char *lua_file) {
 
 	if (luaL_dostring(l, main_file.str) != 0) error = true;
 	// if (luaL_dofile(l, lua_file) != 0) error = true;
+
 	if (lua_type(l, -1) == LUA_TSTRING) {
-		std::cout << lua_tostring(l, -1) << std::endl;
-		luaL_dostring(l, "print(debug.traceback)");
-		std::cout << lua_tostring(l, -1) << std::endl;
+		// std::cout << lua_tostring(l, -1) << std::endl;
+		// luaL_dostring(l, "print(debug.traceback)");
+		// std::cout << lua_tostring(l, -1) << std::endl;
+
+		// {
+		// 	lua_getfield(l, LUA_GLOBALSINDEX, "debug");
+		// 	if (!lua_istable(l, -1)) lua_pop(l, 1);
+		// 	lua_getfield(l, -1, "traceback");
+		// 	if (!lua_isfunction(l, -1)) lua_pop(l, 2);
+		// 	lua_pushvalue(l, 1);
+		// 	lua_pushinteger(l, 2);
+		// 	lua_call(l, 2, 1);
+		// }
+
+		char *error_str = (char*)lua_tostring(l, -1);
+
+		{LunaEvent event = {};
+		event.type = EVENT_SET_COLOR;
+		event.draw.color = {1, 0, 0, 1};
+		command_queue.push_window_event(event);}
+
+		{LunaEvent e = {};
+		e.type = EVENT_DRAW_FONT;
+		e.draw.file = "/Library/Fonts/Courier New Bold.ttf";
+		e.draw.scale = 1.0f;
+		e.draw.str = error_str;
+		e.draw.pos.x = 10;
+		e.draw.pos.y = 10;
+		e.draw.size.x = rain.window_width - 20;
+		command_queue.push_window_event(e);}
+
+		{LunaEvent event = {};
+		event.type = EVENT_PRESENT;
+		command_queue.push_window_event(event);}
 	}
 
 	LUA_BLOCK_END
@@ -364,13 +396,6 @@ void Lua::create_lua_func(char *name, lua_CFunction func) {
 	LUA_BLOCK_END
 }
 
-int lua_update(lua_State* l);
-int lua_get_input(lua_State* l);
-int lua_swap_buffers(lua_State* l);
-int lua_sleep(lua_State* l);
-int lua_file_request(lua_State* l);
-int lua_get_seconds(lua_State* l);
-
 void Lua::registerTables() {
 	LUA_BLOCK_BEGIN
 
@@ -386,19 +411,19 @@ void Lua::registerTables() {
 	create_lua_func("set_color", lua_set_color);
 	create_lua_func("load_texture", lua_load_texture);
 	create_lua_func("rotate", lua_rotate);
+	create_lua_func("clear_rect", lua_clear_rect);
+	create_lua_func("clear_color", lua_clear_color);
+	create_lua_func("present", lua_present);
 
 	create_lua_func("draw_font", lua_draw_font);
 	create_lua_func("font_dimensions", lua_font_dimensions);
-	create_lua_func("load_font", lua_load_font);
 
-	create_lua_func("update", lua_update);
-	create_lua_func("get_input", lua_get_input);
-	create_lua_func("swap_buffers", lua_swap_buffers);
-
+	create_lua_func("next_event", lua_next_event);
+	create_lua_func("key_state", lua_key_state);
 	create_lua_func("sleep", lua_sleep);
-	create_lua_func("file_request", lua_file_request);
-
 	create_lua_func("get_seconds", lua_get_seconds);
+
+	create_lua_func("file_request", lua_file_request);
 
 	// Video
 	/*registerFunction("video", "enableTextures", luaEnableTextures);

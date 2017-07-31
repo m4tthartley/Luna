@@ -37,6 +37,8 @@ struct FontCache {
 		float2 megaTextureOffset;
 		float2 megaTextureSize;
 	} glyphs[0xFF];
+
+	int loaded;
 };
 
 struct Font_Mega_Texture {
@@ -86,6 +88,13 @@ int LoadFont(char *File, float scale)
 		font->pixelGlyphScale = stbtt_ScaleForPixelHeight(&font->STBFontInfo, size);
 
 		strcpy(font->file, File);
+
+		printf("font %s\n", File);
+		// printf("ascent %i\n", font->Ascent);
+		// printf("descent %i\n", font->Descent);
+		// printf("linegap %i\n", font->LineGap);
+
+		atomic_swap32(&font->loaded, true);
 	} else {
 		return -1;
 	}
@@ -102,7 +111,13 @@ FontCache *GetFontCache(char *font_file, float size) {
 		}
 	}
 
-	return &fonts[LoadFont(font_file, size)];
+	LunaEvent e = {};
+	e.type = EVENT_LOAD_FONT;
+	e.draw.file = font_file;
+	e.draw.scale = size;
+	command_queue.push_event(e);
+	return NULL;
+	// return &fonts[LoadFont(font_file, size)];
 }
 
 //Font_Cache *cacheFont(render_state *renderState, asset_font *font, float scale) {
@@ -216,8 +231,9 @@ float Font_GetAdvance(FontCache *font, char a, char b, float size)
 		Kern = (float)stbtt_GetCodepointKernAdvance(&font->STBFontInfo, a, b);
 	}
 
-	float GlyphAdvance = (float)font->glyphs[a].advanceWidth;
-	float Result = ((GlyphAdvance * font->glyphScale) + (Kern * font->glyphScale)) * size;
+	int GlyphAdvance;// = (float)font->glyphs[a].advanceWidth;
+	stbtt_GetCodepointHMetrics(&font->STBFontInfo, a, &GlyphAdvance, NULL);
+	float Result = (((float)GlyphAdvance * font->glyphScale) + (Kern * font->glyphScale)) * size;
 	return Result;
 }
 
@@ -228,6 +244,8 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 
 	// FontCache *Font = &fonts[fontid];
 	FontCache *Font = GetFontCache(font_file, size);
+	if (!Font) return {};
+	if (!atomic_fetch32(&Font->loaded)) return {};
 
 	size = 1.0f;
 
@@ -271,7 +289,8 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 
 					if (Advance+SearchAdvance > widthLimit-10.0f)
 					{
-						RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size /** Font->RenderScale*/;
+						RowOffset += (Font->Ascent-Font->Descent) * Font->glyphScale * size;
+
 						// ++RowsRendered;
 
 						Advance = 0.0f;
@@ -283,17 +302,19 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 				}
 			}
 
-			if (!Font->glyphs[*str].loaded) {
-				LoadFontGlyph(Font, *str);
-			}
+			// if (!Font->glyphs[*str].loaded) {
+			// 	LoadFontGlyph(Font, *str);
+			// }
 
-			float Kern = 0.0f;
-			if (*(str+1)) {
-				Kern = (float)stbtt_GetCodepointKernAdvance(&Font->STBFontInfo, *str, *(str+1));
-			}
+			// float Kern = 0.0f;
+			// if (*(str+1)) {
+			// 	Kern = (float)stbtt_GetCodepointKernAdvance(&Font->STBFontInfo, *str, *(str+1));
+			// }
 
-			float GlyphAdvance = (float)Font->glyphs[*str].advanceWidth;
-			Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * size /** Font->RenderScale*/;
+			// float GlyphAdvance = (float)Font->glyphs[*str].advanceWidth;
+			// Advance += ((GlyphAdvance * Font->glyphScale) + (Kern * Font->glyphScale)) * size /** Font->RenderScale*/;
+			Advance += Font_GetAdvance(Font, *str, *(str+1), size);
+
 			if (Advance > biggest_advance) biggest_advance = Advance;
 
 			LastChar = *str;
@@ -309,7 +330,7 @@ float2 GetTextDim(char *font_file, char *str, float size, float widthLimit)
 }
 
 // int fontid, char *str, float2 s, float widthLimit
-void _PushFont(char *font_file, char *Text, float3 p, float size, float4 c, float BoundingBoxX = 0.0f, float *RenderedHeight = NULL)
+void draw_font(char *font_file, float size, char *Text, float3 p, float BoundingBoxX = 0.0f)
 {
 	/*asset_font *Font = GetFont(rstate->platform, rstate->Assets, assetID);
 	Font_Cache *fontCache = getFontCache(rstate->platform, rstate, assetID, s.y);*/
@@ -317,6 +338,7 @@ void _PushFont(char *font_file, char *Text, float3 p, float size, float4 c, floa
 	// FontCache *Font = &fonts[fontid];
 	FontCache *Font = GetFontCache(font_file, size);
 	if (!Font) return;
+	if (!atomic_fetch32(&Font->loaded)) return;
 
 	size = 1.0f;
 
@@ -442,48 +464,10 @@ void _PushFont(char *font_file, char *Text, float3 p, float size, float4 c, floa
 	glDisable(GL_TEXTURE_2D);
 
 	// RowOffset += (Font->Ascent-Font->Descent) * Font->GlyphScale * s.y;
-	if (RenderedHeight)
-	{
-		*RenderedHeight = RowOffset;
-	}
+	// if (RenderedHeight)
+	// {
+	// 	*RenderedHeight = RowOffset;
+	// }
 
 	//PushFontCommand(RState, AssetID, p, s, c, glyphs, glyphCount, WorldSpace);
-}
-
-int lua_draw_font(lua_State* l) {
-	// int fontid = lua_tonumber(l, 1);
-	char *font_file = (char*)lua_tostring(l, 1);
-	float size = lua_tonumber(l, 2);
-	char *str = (char*)lua_tostring(l, 3);
-	float x = lua_tonumber(l, 4);
-	float y = lua_tonumber(l, 5);
-	float width = lua_tonumber(l, 6);
-
-	_PushFont(font_file, str, {x, y, 0}, size, {1, 1, 1, 1}, width);
-
-	return 0;
-}
-
-int lua_font_dimensions(lua_State* l) {
-	// int fontid = lua_tonumber(l, 1);
-	char *font_file = (char*)lua_tostring(l, 1);
-	float size = lua_tonumber(l, 2);
-	char *str = (char*)lua_tostring(l, 3);
-	float width = lua_tonumber(l, 4);
-
-	float2 dim = GetTextDim(font_file, str, size, width);
-	lua_pushnumber(l, dim.x);
-	lua_pushnumber(l, dim.y);
-
-	return 2;
-}
-
-int lua_load_font(lua_State* l) {
-	char *file = (char*)lua_tostring(l, 1);
-	float size = lua_tonumber(l, 2);
-
-	int font = LoadFont(file, size);
-	lua_pushnumber(l, font);
-
-	return 1;
 }
