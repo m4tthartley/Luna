@@ -152,7 +152,7 @@ void Lua::init(char *lua_file) {
 
 	// printf("address: %s\n", lua_file);
 	FileResult main_file = load_universal_file(lua_file);
-	// printf("code: \n%s\n", main_file.str);
+	//printf("code: \n%s\n", main_file.str);
 
 	if (luaL_dostring(l, main_file.str) != 0) error = true;
 	// if (luaL_dofile(l, lua_file) != 0) error = true;
@@ -181,7 +181,7 @@ void Lua::init(char *lua_file) {
 
 		{LunaEvent e = {};
 		e.type = EVENT_DRAW_FONT;
-		e.draw.file = "/Library/Fonts/Courier New Bold.ttf";
+		e.draw.file = DEBUG_FONT;
 		e.draw.scale = 1.0f;
 		e.draw.str = error_str;
 		e.draw.pos.x = 10;

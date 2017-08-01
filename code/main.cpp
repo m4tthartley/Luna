@@ -15,6 +15,7 @@
 
 #include "../../libs/rain.c"
 #include "../../libs/sys.c"
+#include "../../libs/sdl.c"
 
 #include "types.h"
 
@@ -194,6 +195,13 @@ FileResult load_universal_file(char *file) {
 		return {mem, _file_buffer_size};
 	}
 }
+
+#ifdef __APPLE__
+#define DEBUG_FONT "/Library/Fonts/Courier New Bold.ttf"
+#endif
+#ifdef _WIN32
+#define DEBUG_FONT "c:/windows/fonts/consola.ttf"
+#endif
 
 #include "engine.h"
 

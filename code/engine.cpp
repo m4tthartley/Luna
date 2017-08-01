@@ -1,5 +1,6 @@
 
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
+#define GL_MULTISAMPLE                    0x809D
 
 static int mousex;
 static int mousey;
@@ -60,67 +61,64 @@ struct Engine {
 	static int getTicks(lua_State* l);
 	static int getQps(lua_State* l);*/
 
+	SDL_Window *sdl_window;
+
 	void process_luna_event(LunaEvent e) {
-		// while (atomic_fetch32(&_event_count) > 0) {
-			// LunaEvent *e = &_events[_event_process_index];
-			// printf("luna event %i \n", e->type);
-			switch (e.type) {
-				case EVENT_DRAW_LINE:
-					draw_line(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y);
-					break;
-				case EVENT_DRAW_TRIANGLE:
-					draw_triangle(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y);
-					break;
-				case EVENT_DRAW_LINE_TRIANGLE:
-					draw_line_triangle(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y);
-					break;
-				case EVENT_DRAW_RECT:
-					draw_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
-					break;
-				case EVENT_DRAW_LINE_RECT:
-					draw_line_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
-					break;
-				case EVENT_SET_TEX_COORDS:
-					set_tex_coords(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y, e.draw.pos4.x, e.draw.pos4.y);
-					break;
-				case EVENT_DRAW_RECT_TEXTURE:
-					draw_rect_texture(e.draw.texture, e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
-					break;
-				case EVENT_DRAW_CIRCLE:
-					draw_circle(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
-					break;
-				case EVENT_DRAW_LINE_CIRCLE:
-					draw_line_circle(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
-					break;
-				case EVENT_SET_COLOR:
-					glColor4f(e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a);
-					break;
-				case EVENT_LOAD_TEXTURE:
-					textures[e.draw.texture].tex = _load_texture(textures[e.draw.texture].file);
-					break;
-				case EVENT_ROTATE:
-					rotate(e.draw.amount);
-					break;
-				case EVENT_CLEAR_RECT:
-					clear_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
-					break;
-				case EVENT_CLEAR_COLOR:
-					_clear_color = {e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a};
-					break;
-				case EVENT_PRESENT:
-					rain_swap_buffers(&rain);
-					break;
+		switch (e.type) {
+			case EVENT_DRAW_LINE:
+				draw_line(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y);
+				break;
+			case EVENT_DRAW_TRIANGLE:
+				draw_triangle(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y);
+				break;
+			case EVENT_DRAW_LINE_TRIANGLE:
+				draw_line_triangle(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y);
+				break;
+			case EVENT_DRAW_RECT:
+				draw_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+				break;
+			case EVENT_DRAW_LINE_RECT:
+				draw_line_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+				break;
+			case EVENT_SET_TEX_COORDS:
+				set_tex_coords(e.draw.pos.x, e.draw.pos.y, e.draw.pos2.x, e.draw.pos2.y, e.draw.pos3.x, e.draw.pos3.y, e.draw.pos4.x, e.draw.pos4.y);
+				break;
+			case EVENT_DRAW_RECT_TEXTURE:
+				draw_rect_texture(e.draw.texture, e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+				break;
+			case EVENT_DRAW_CIRCLE:
+				draw_circle(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+				break;
+			case EVENT_DRAW_LINE_CIRCLE:
+				draw_line_circle(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+				break;
+			case EVENT_SET_COLOR:
+				glColor4f(e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a);
+				break;
+			case EVENT_LOAD_TEXTURE:
+				textures[e.draw.texture].tex = _load_texture(textures[e.draw.texture].file);
+				break;
+			case EVENT_ROTATE:
+				rotate(e.draw.amount);
+				break;
+			case EVENT_CLEAR_RECT:
+				clear_rect(e.draw.pos.x, e.draw.pos.y, e.draw.size.x, e.draw.size.y);
+				break;
+			case EVENT_CLEAR_COLOR:
+				_clear_color = {e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a};
+				break;
+			case EVENT_PRESENT:
+				//rain_swap_buffers(&rain);
+				SDL_GL_SwapWindow(sdl_window);
+				break;
 
-				case EVENT_LOAD_FONT:
-					LoadFont(e.draw.file, e.draw.scale);
-					break;
-				case EVENT_DRAW_FONT:
-					draw_font(e.draw.file, e.draw.scale, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.size.x);
-					break;
-			}
-
-			
-		// }
+			case EVENT_LOAD_FONT:
+				LoadFont(e.draw.file, e.draw.scale);
+				break;
+			case EVENT_DRAW_FONT:
+				draw_font(e.draw.file, e.draw.scale, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.size.x);
+				break;
+		}
 	}
 
 	void run() {
@@ -132,7 +130,41 @@ struct Engine {
 		// rain.window_title = lua.get_table_var("window", "title");
 
 		rain.multisample_window = true;
-		rain_init(&rain);
+		// rain_init(&rain);
+		{
+			if (!rain.window_width || !rain.window_height) {
+				rain.window_width = 1280;
+				rain.window_height = 720;
+			}
+			if (!rain.window_title) {
+				rain.window_title = "Rain";
+			}
+
+			load_sdl_procs();
+
+			SDL_SetMainReady();
+			SDL_Init(SDL_INIT_VIDEO);
+
+			if (rain.multisample_window) {
+				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
+			}
+
+			sdl_window = SDL_CreateWindow(rain.window_title,
+				SDL_WINDOWPOS_CENTERED,
+				SDL_WINDOWPOS_CENTERED,
+				rain.window_width, rain.window_height,
+				SDL_WINDOW_SHOWN|SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+
+			/*SDL_GLContext gl_context =*/ SDL_GL_CreateContext(sdl_window);
+
+			if (rain.multisample_window) {
+				glEnable(GL_MULTISAMPLE);
+			}
+
+			rain.start_time = GetTime();
+			rain.old_time = rain.start_time;
+		}
 
 		glLineWidth(2.0f);
 
@@ -159,6 +191,7 @@ struct Engine {
 		glLoadIdentity();
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
+		SDL_GL_SwapWindow(sdl_window);
 
 		init_font_system();
 
@@ -167,16 +200,9 @@ struct Engine {
 			printf("SDL_RegisterEvents failed! \n");
 		}
 
-		LoadFont("/Library/Fonts/Courier New Bold.ttf", 1.0f);
+		LoadFont(DEBUG_FONT, 1.0f);
 
 		lua_thread = create_thread(lua_thread_proc, &lua);
-
-		// glViewport(0, 0, rain.window_width, rain.window_height);
-		// glMatrixMode(GL_PROJECTION);
-		// glLoadIdentity();
-		// glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
-		// glMatrixMode(GL_MODELVIEW);
-		// glLoadIdentity();
 
 		int num_luna_events_we_got = 0;
 		int num_frames = 0;
@@ -264,7 +290,7 @@ struct Engine {
 						}
 						break;}
 					{case SDL_KEYDOWN:
-						if ((rain.keys[KEY_CTRL].down || rain.keys[KEY_LGUI].down) && event.key.keysym.scancode == SDL_SCANCODE_R) {
+						if ((rain.keys[SDL_SCANCODE_LCTRL].down || rain.keys[SDL_SCANCODE_LGUI].down) && event.key.keysym.scancode == SDL_SCANCODE_R) {
 							destroy_thread(lua_thread);
 							for (int i = 0; i < texture_count; ++i) {
 								glDeleteTextures(1, &textures[i].tex);
@@ -325,7 +351,7 @@ struct Engine {
 					lua = Lua(default_lua_file);
 					lua.appFunc("init");*/
 
-					_engine.reload = true;
+					reload = true;
 					// lua_pushstring(_engine.lua.l, "reloading...");
 					// lua_error(_engine.lua.l);
 				}

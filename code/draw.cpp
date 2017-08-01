@@ -127,9 +127,8 @@ int _load_texture(char *file) {
 
 	FileResult f = load_universal_file(file);
 	unsigned char *data = stbi_load_from_memory((stbi_uc*)f.data, f.size, &width, &height, &components, 0);
-    printf("%s\n", stbi_failure_reason());
 	if (!data) {
-		std::cout << "stb_image: unable to load image" << std::endl;
+		printf("stb_image: unable to load image, %s", stbi_failure_reason());
 		return 0;
 	}
 
