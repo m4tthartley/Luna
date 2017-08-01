@@ -129,6 +129,7 @@ struct Engine {
 
 		// rain.window_title = lua.get_table_var("window", "title");
 
+		rain.window_title = "Luna";
 		rain.multisample_window = true;
 		// rain_init(&rain);
 		{

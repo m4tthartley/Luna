@@ -174,10 +174,23 @@ void Lua::init(char *lua_file) {
 
 		char *error_str = (char*)lua_tostring(l, -1);
 
+		float2 dim = GetTextDim(DEBUG_FONT, error_str, 1.0f, 0);
+
+		{LunaEvent event = {};
+		event.type = EVENT_SET_COLOR;
+		event.draw.color = {0, 0, 0, 1};
+		command_queue.push_window_event(event); }
+
+		{LunaEvent event = {};
+		event.type = EVENT_DRAW_RECT;
+		event.draw.pos = {10-5, 10+4-5};
+		event.draw.size = {dim.x+10, dim.y+10};
+		command_queue.push_window_event(event); }
+
 		{LunaEvent event = {};
 		event.type = EVENT_SET_COLOR;
 		event.draw.color = {1, 0, 0, 1};
-		command_queue.push_window_event(event);}
+		command_queue.push_window_event(event); }
 
 		{LunaEvent e = {};
 		e.type = EVENT_DRAW_FONT;
@@ -192,6 +205,8 @@ void Lua::init(char *lua_file) {
 		{LunaEvent event = {};
 		event.type = EVENT_PRESENT;
 		command_queue.push_window_event(event);}
+
+		lua_pop(l, 1);
 	}
 
 	LUA_BLOCK_END
