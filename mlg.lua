@@ -15,6 +15,65 @@ function vec2(x, y)
 end
 
 local mlg = {
+	row_pos = vec2(0, 0),
+	col_pos = vec2(0, 0),
+	row_size = vec2(0, 0),
+	-- col_offset = vec2(0, 0),
+	col_size = 0,
+}
+
+function mlg:begin()
+	self.row_pos = vec2(0, 0)
+	self.row_size = vec2(0, 0)
+	self.col_pos = vec2(0, 0)
+	self.col_size = 0
+end
+
+function mlg:row(width, callback)
+	local pos = vec2(self.row_pos.x, self.row_pos.y)
+	local cpos = vec2(self.col_pos.x, self.col_pos.y)
+	local size = vec4(self.row_size.x, self.row_size.y)
+	local csize = self.col_size--vec4(self.col_size.x, self.col_size.y)
+	self.row_pos = vec2(self.row_pos.x+self.col_pos.x, self.row_pos.y+self.col_pos.y)
+	self.col_pos.x = 0
+	self.row_size = vec2(0, 0)
+	self.col_size = 0
+	callback()
+	self.row_pos = vec2(pos.x, pos.y)
+	self.col_pos = vec2(cpos.x, cpos.y+self.row_size.y)
+	self.row_size = vec2(size.x, math.max(size.y, cpos.y+self.row_size.y))
+	self.col_size = csize
+end
+
+function mlg:col(width, callback)
+	self.col_pos.y = 0
+	self.col_size = width
+	callback()
+	self.col_pos.x = self.col_pos.x + width
+	self.row_size.x = math.max(self.row_size.x, self.col_pos.x)
+end
+
+function mlg:box(height, color, p)
+	set_color(color.r, color.g, color.b, color.a)
+	local pad = p or vec2(0, 0)
+	draw_rect(self.row_pos.x+self.col_pos.x+pad.x, self.row_pos.y+self.col_pos.y+pad.y, self.col_size-(pad.x*2), height-(pad.y*2))
+	self.col_pos.y = self.col_pos.y + height
+	self.row_size.y = math.max(self.row_size.y, self.col_pos.y)
+end
+
+function mlg:text(file, size, str, color, p)
+	set_color(color.r, color.g, color.b, color.a)
+	-- draw_rect(self.row_pos.x+self.col_pos.x, self.row_pos.y+self.col_pos.y, self.col_size, height)
+	local pad = p or vec2(0, 0)
+	local dim = font_dimensions(file, size, str, self.col_size-(pad.x*2))
+	-- set_color(c.r, c.g, c.b, c.a)
+	draw_font(file, size, str, self.row_pos.x+self.col_pos.x+pad.x, self.row_pos.y+self.col_pos.y+pad.y, self.col_size-(pad.x*2))
+	self.col_pos.y = self.col_pos.y + dim.y + (pad.y*2)
+	self.row_size.y = math.max(self.row_size.y, self.col_pos.y)
+end
+
+--[[
+local mlg = {
 	row_stack = {},
 	last_row_height = 0,
 }
@@ -96,5 +155,6 @@ function mlg:set_pad(amount)
 	local row = self.row_stack[table.getn(self.row_stack)]
 	row.pad = amount
 end
+]]--
 
 return mlg

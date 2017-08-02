@@ -3,8 +3,10 @@
 #include "../stb_truetype.h"
 
 #define DEFAULT_FONT_SIZE 16.0f
-#define FONT_MEGA_TEXTURE_WIDTH 512
-#define FONT_MEGA_TEXTURE_HEIGHT 512
+//#define FONT_MEGA_TEXTURE_WIDTH 512
+//#define FONT_MEGA_TEXTURE_HEIGHT 512
+#define FONT_MEGA_TEXTURE_WIDTH 1024
+#define FONT_MEGA_TEXTURE_HEIGHT 1024
 
 //struct asset_font
 //{
@@ -144,6 +146,7 @@ FontCache *GetFontCache(char *font_file, float size) {
 void LoadFontGlyph(FontCache *font, char GlyphIndex) {
 	auto *glyph = &font->glyphs[GlyphIndex];
 	glyph->loaded = true;
+	//printf("loading glyph %c\n", GlyphIndex);
 
 	stbtt_GetCodepointHMetrics(&font->STBFontInfo, GlyphIndex, &glyph->advanceWidth, &glyph->leftSideBearing);
 
