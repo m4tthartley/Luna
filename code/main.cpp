@@ -200,21 +200,34 @@ FileResult http_post(char *file, char *post) {
 	memset(_file_buffer, 0, _file_buffer_size);
 	_file_buffer_size = 0;
 
-	char address[256] = {};
-	strcpy(address, _path);
-	strcat(address, file);
+	// char address[256] = {};
+	// strcpy(address, _path);
+	// strcat(address, file);
 
-	int i;
-	char url_file[64] = {};
-	url_file[0] = '/';
-	for (i = 0; i < strlen(address); ++i) {
-		if (address[i] == '/') {
-			address[i] = 0;
-			strcat(url_file, address+i+1);
-			break;
+	// int i;
+	// char url_file[64] = {};
+	// url_file[0] = '/';
+	// for (i = 0; i < strlen(address); ++i) {
+	// 	if (address[i] == '/') {
+	// 		address[i] = 0;
+	// 		strcat(url_file, address+i+1);
+	// 		break;
+	// 	}
+	// }
+
+#ifdef __APPLE__
+		static CURL *c = NULL;
+		if (!c) {
+			curl_global_init(CURL_GLOBAL_ALL);
+			c = curl_easy_init();
 		}
-	}
-
+		curl_easy_setopt(c, CURLOPT_URL, file);
+		curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
+		curl_easy_setopt(c, CURLOPT_POSTFIELDS, post);
+		curl_easy_setopt(c, CURLOPT_POST, true);
+		CURLcode result = curl_easy_perform(c);
+#endif
+#ifdef _WIN32
 	if (!net_handle) net_handle = InternetOpen("Luna", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
 	if (!net_handle) {
 		return{};
@@ -238,6 +251,7 @@ FileResult http_post(char *file, char *post) {
 	if (!result) {
 		return{};
 	}
+#endif
 
 	char *mem = (char*)malloc(_file_buffer_size + 1);
 	memcpy(mem, _file_buffer, _file_buffer_size);
@@ -341,8 +355,13 @@ int main(int argc, char **argv)
 
 	// printf("%s\n%s\n", path, _address);
 
-	FileResult test = http_post("http://138.68.149.32/luna-chat/web/app.php/api/login", "{\"username\":\"matt\",\"password\":\"test\"}");
+	FileResult test = http_post("http://138.68.149.32/luna-chat/web/app.php/api/login",
+		"{\n"
+		"    \"username\": \"matt\",\n"
+		"    \"password\": \"test\"\n"
+		"}");
 	int x = 0;
+	printf("post response%s\n", test.str);
 
 	printf("\n");
 	_engine.run();
