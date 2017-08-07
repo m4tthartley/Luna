@@ -117,6 +117,8 @@ struct Engine {
 				break;
 			case EVENT_DRAW_FONT:
 				draw_font(e.draw.file, e.draw.scale, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.size.x);
+				free(e.draw.file);
+				free(e.draw.str);
 				break;
 		}
 	}

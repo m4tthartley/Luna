@@ -381,9 +381,11 @@ int lua_draw_font(lua_State* l) {
 	// _PushFont(font_file, str, {x, y, 0}, size, {1, 1, 1, 1}, width);
 	LunaEvent e = {};
 	e.type = EVENT_DRAW_FONT;
-	e.draw.file = font_file;
+	e.draw.file = (char*)malloc(strlen(font_file)+1);
+	strcpy(e.draw.file, font_file);
 	e.draw.scale = size;
-	e.draw.str = str;
+	e.draw.str = (char*)malloc(strlen(str)+1);
+	strcpy(e.draw.str, str);
 	e.draw.pos.x = x;
 	e.draw.pos.y = y;
 	e.draw.size.x = width;

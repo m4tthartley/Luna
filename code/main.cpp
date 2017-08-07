@@ -196,6 +196,55 @@ FileResult load_universal_file(char *file) {
 	}
 }
 
+FileResult http_post(char *file, char *post) {
+	memset(_file_buffer, 0, _file_buffer_size);
+	_file_buffer_size = 0;
+
+	char address[256] = {};
+	strcpy(address, _path);
+	strcat(address, file);
+
+	int i;
+	char url_file[64] = {};
+	url_file[0] = '/';
+	for (i = 0; i < strlen(address); ++i) {
+		if (address[i] == '/') {
+			address[i] = 0;
+			strcat(url_file, address+i+1);
+			break;
+		}
+	}
+
+	if (!net_handle) net_handle = InternetOpen("Luna", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+	if (!net_handle) {
+		return{};
+	}
+	DWORD context = 567;
+	HINTERNET connection = InternetConnect(net_handle, address, 80, NULL, NULL, INTERNET_SERVICE_HTTP, 0, (DWORD_PTR)&context);
+	if (!connection) {
+		return{};
+	}
+	char *rgpszAcceptTypes[] = {"text/*", "image/*", "font/*", NULL};
+	HINTERNET request = HttpOpenRequestA(connection, NULL, url_file, NULL, NULL, (LPCSTR*)&rgpszAcceptTypes, 0, (DWORD_PTR)&context);
+	if (!request) {
+		return{};
+	}
+	bool send_result = HttpSendRequest(request, NULL, 0, post, 0);
+	if (!send_result) {
+		return{};
+	}
+	DWORD read_len;
+	BOOL result = InternetReadFile(request, _file_buffer, array_size(_file_buffer), &read_len);
+	if (!result) {
+		return{};
+	}
+
+	char *mem = (char*)malloc(_file_buffer_size + 1);
+	memcpy(mem, _file_buffer, _file_buffer_size);
+	mem[_file_buffer_size] = 0;
+	return{mem, _file_buffer_size};
+}
+
 #ifdef __APPLE__
 #define DEBUG_FONT "/Library/Fonts/Courier New Bold.ttf"
 #endif
@@ -291,6 +340,9 @@ int main(int argc, char **argv)
 	}
 
 	// printf("%s\n%s\n", path, _address);
+
+	FileResult test = http_post("http://138.68.149.32/luna-chat/web/app.php/api/login", "{\"username\":\"matt\",\"password\":\"test\"}");
+	int x = 0;
 
 	printf("\n");
 	_engine.run();
