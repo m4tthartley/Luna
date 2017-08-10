@@ -14,6 +14,20 @@ function vec2(x, y)
 	}
 end
 
+function vec4(x, y, z, w)
+	return {
+		x = x or 0.0,
+		y = y or 0.0,
+		z = z or 0.0,
+		w = w or 0.0,
+
+		r = x or 0.0,
+		g = y or 0.0,
+		b = z or 0.0,
+		a = w or 0.0,
+	}
+end
+
 local mlg = {
 	row_pos = vec2(0, 0),
 	col_pos = vec2(0, 0),
@@ -56,9 +70,12 @@ end
 function mlg:box(height, color, p)
 	set_color(color.r, color.g, color.b, color.a)
 	local pad = p or vec2(0, 0)
-	draw_rect(self.row_pos.x+self.col_pos.x+pad.x, self.row_pos.y+self.col_pos.y+pad.y, self.col_size-(pad.x*2), height-(pad.y*2))
+	local pos = {x = self.row_pos.x+self.col_pos.x+pad.x, y = self.row_pos.y+self.col_pos.y+pad.y,
+				 w = self.col_size-(pad.x*2), h = height-(pad.y*2)}
+	draw_rect(pos.x, pos.y, pos.w, pos.h)
 	self.col_pos.y = self.col_pos.y + height
 	self.row_size.y = math.max(self.row_size.y, self.col_pos.y)
+	return pos
 end
 
 function mlg:text(file, size, str, color, p)
@@ -70,6 +87,28 @@ function mlg:text(file, size, str, color, p)
 	draw_font(file, size, str, self.row_pos.x+self.col_pos.x+pad.x, self.row_pos.y+self.col_pos.y+pad.y, self.col_size-(pad.x*2))
 	self.col_pos.y = self.col_pos.y + dim.y + (pad.y*2)
 	self.row_size.y = math.max(self.row_size.y, self.col_pos.y)
+end
+
+function mlg:spacer(amount)
+	mlg:box(amount, vec4(0, 0, 0, 0))
+end
+
+function mlg:is_in_box(pos, box)
+	return pos.x > box.x and pos.x < box.x+box.w and
+		   pos.y > box.y and pos.y < box.y+box.h
+end
+
+function mlg:text_input()
+	local pos = mlg:box(30, vec4(0, 0, 0, 0), vec2(0, 0))
+	local mouse = mouse_pos()
+	if self:is_in_box(mouse, pos) then
+		set_color(1, 1, 1, 1)
+	else
+		set_color(1, 1, 1, 0.5)
+	end
+	draw_line_rect(pos.x, pos.y, pos.w, pos.h)
+	set_color(1, 1, 1, 1)
+	draw_font("jellee.ttf", 1.0, "testing", pos.x+10, pos.y+4, pos.w - 20)
 end
 
 --[[

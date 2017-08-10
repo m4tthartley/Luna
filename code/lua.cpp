@@ -173,8 +173,13 @@ void Lua::init(char *lua_file) {
 		// }
 
 		char *error_str = (char*)lua_tostring(l, -1);
+		char *temp = (char*)malloc(strlen(error_str+1));
+		strcpy(temp, error_str);
+		error_str = temp;
 
-		float2 dim = GetTextDim(DEBUG_FONT, error_str, 1.0f, 0);
+		char *font = (char*)malloc(strlen(DEBUG_FONT+1));
+		strcpy(font, DEBUG_FONT);
+		float2 dim = GetTextDim(font, error_str, 1.0f, 0);
 
 		{LunaEvent event = {};
 		event.type = EVENT_SET_COLOR;
@@ -194,7 +199,7 @@ void Lua::init(char *lua_file) {
 
 		{LunaEvent e = {};
 		e.type = EVENT_DRAW_FONT;
-		e.draw.file = DEBUG_FONT;
+		e.draw.file = font;
 		e.draw.scale = 1.0f;
 		e.draw.str = error_str;
 		e.draw.pos.x = 10;
@@ -435,10 +440,13 @@ void Lua::registerTables() {
 
 	create_lua_func("next_event", lua_next_event);
 	create_lua_func("key_state", lua_key_state);
+	create_lua_func("mouse_pos", lua_mouse_pos);
 	create_lua_func("sleep", lua_sleep);
 	create_lua_func("get_seconds", lua_get_seconds);
 
-	create_lua_func("file_request", lua_file_request);
+	create_lua_func("load_module", lua_load_module);
+	create_lua_func("http_get", lua_http_get);
+	create_lua_func("http_post", lua_http_post);
 
 	// Video
 	/*registerFunction("video", "enableTextures", luaEnableTextures);

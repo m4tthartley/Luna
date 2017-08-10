@@ -273,9 +273,46 @@ int lua_sleep(lua_State *l) {
 	return 0;
 }
 
-int lua_file_request(lua_State *l) {
+int lua_import_module(lua_State *l) {
 	char *f = (char*)lua_tostring(l, 1);
 	FileResult file = load_universal_file(f);
+
+	if (file.str) {
+		lua_pushstring(l, file.str);
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+int lua_load_module(lua_State *l) {
+	char *f = (char*)lua_tostring(l, 1);
+	FileResult file = load_universal_file(f);
+
+	if (file.str) {
+		lua_pushstring(l, file.str);
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+int lua_http_get(lua_State *l) {
+	char *f = (char*)lua_tostring(l, 1);
+	FileResult file = http_get(f);
+
+	if (file.str) {
+		lua_pushstring(l, file.str);
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+int lua_http_post(lua_State *l) {
+	char *f = (char*)lua_tostring(l, 1);
+	char *post = (char*)lua_tostring(l, 2);
+	FileResult file = http_post(f, post);
 
 	if (file.str) {
 		lua_pushstring(l, file.str);
@@ -312,6 +349,17 @@ int lua_key_state(lua_State *l) {
 	// lua_settable(l, -3);
 
 	lua_pushboolean(l, down);
+	return 1;
+}
+
+int lua_mouse_pos(lua_State *l) {
+	int x = atomic_fetch32((int*)&rain.mouse.position.x);
+	int y = atomic_fetch32((int*)&rain.mouse.position.y);
+
+	lua_newtable(l);
+	lua_pushstring(l, "x"); lua_pushnumber(l, x); lua_settable(l, -3);
+	lua_pushstring(l, "y"); lua_pushnumber(l, y); lua_settable(l, -3);
+	
 	return 1;
 }
 

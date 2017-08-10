@@ -70,6 +70,45 @@ extern "C" {
 #include "videoLua.h"
 #include "videoLua.cpp"
 
+/*
+#ifdef _WIN32
+		int i;
+		char url_file[64] = {};
+		url_file[0] = '/';
+		for (i = 0; i < strlen(address); ++i) {
+			if (address[i] == '/') {
+				address[i] = 0;
+				strcat(url_file, address+i+1);
+				break;
+			}
+		}
+
+		if (!net_handle) net_handle = InternetOpen("Luna", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+		if (!net_handle) {
+			return{};
+		}
+		DWORD context = 567;
+		HINTERNET connection = InternetConnect(net_handle, address, 80, NULL, NULL, INTERNET_SERVICE_HTTP, 0, (DWORD_PTR)&context);
+		if (!connection) {
+			return{};
+		}
+		char *rgpszAcceptTypes[] = {"text/*", "image/*", "font/*", NULL};
+		HINTERNET request = HttpOpenRequestA(connection, NULL, url_file, NULL, NULL, (LPCSTR*)&rgpszAcceptTypes, 0, (DWORD_PTR)&context);
+		if (!request) {
+			return{};
+		}
+		bool send_result = HttpSendRequest(request, NULL, 0, NULL, 0);
+		if (!send_result) {
+			return{};
+		}
+		DWORD read_len;
+		BOOL result = InternetReadFile(request, _file_buffer, array_size(_file_buffer), &read_len);
+		if (!result) {
+			return{};
+		}
+#endif
+*/
+
 struct FileResult {
 	union {
 		void *data;
@@ -112,14 +151,48 @@ size_t curl_data_write(void *buffer, size_t size, size_t nmemb, void *user) {
 	_file_buffer_size += s;
 	return s;
 }
-FileResult load_universal_file(char *file) {
+FileResult http_get(char *file) {
 	memset(_file_buffer, 0, _file_buffer_size);
 	_file_buffer_size = 0;
-	
+
+	static CURL *c = NULL;
+	if (!c) {
+		curl_global_init(CURL_GLOBAL_ALL);
+		c = curl_easy_init();
+	}
+	curl_easy_setopt(c, CURLOPT_URL, file);
+	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
+	CURLcode result = curl_easy_perform(c);
+
+	char *mem = (char*)malloc(_file_buffer_size + 1);
+	memcpy(mem, _file_buffer, _file_buffer_size);
+	mem[_file_buffer_size] = 0;
+	return {mem, _file_buffer_size};
+}
+FileResult http_post(char *file, char *post) {
+	memset(_file_buffer, 0, _file_buffer_size);
+	_file_buffer_size = 0;
+
+	static CURL *c = NULL;
+	if (!c) {
+		curl_global_init(CURL_GLOBAL_ALL);
+		c = curl_easy_init();
+	}
+	curl_easy_setopt(c, CURLOPT_URL, file);
+	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
+	curl_easy_setopt(c, CURLOPT_POSTFIELDS, post);
+	curl_easy_setopt(c, CURLOPT_POST, true);
+	CURLcode result = curl_easy_perform(c);
+
+	char *mem = (char*)malloc(_file_buffer_size + 1);
+	memcpy(mem, _file_buffer, _file_buffer_size);
+	mem[_file_buffer_size] = 0;
+	return {mem, _file_buffer_size};
+}
+FileResult load_universal_file(char *file) {
 	char address[256] = {};
 	strcpy(address, _path);
 	strcat(address, file);
-	// printf("%s\n", address);
 
 	bool local_load = _local;
 	if (file[0] == 'u' &&
@@ -132,132 +205,36 @@ FileResult load_universal_file(char *file) {
 		strcpy(address, file);
 	}
 
-	if (file[0] == '/') local_load = true;
+	// if (file[0] == '/') local_load = true;
 
-	if (local_load/*strlen(address) > 5 &&
-		address[0] == 'f' &&
-		address[1] == 'i' &&
-		address[2] == 'l' &&
-		address[3] == 'e' &&
-		address[4] == ':'*/) {
-		// address += 5;
+	if (local_load) {
 		return load_file(address);
 	} else {
-#ifdef __APPLE__
-		static CURL *c = NULL;
-		if (!c) {
-			curl_global_init(CURL_GLOBAL_ALL);
-			c = curl_easy_init();
-		}
-		curl_easy_setopt(c, CURLOPT_URL, address);
-		curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
-		CURLcode result = curl_easy_perform(c);
-#endif
-#ifdef _WIN32
-		int i;
-		char url_file[64] = {};
-		url_file[0] = '/';
-		for (i = 0; i < strlen(address); ++i) {
-			if (address[i] == '/') {
-				address[i] = 0;
-				strcat(url_file, address+i+1);
-				break;
-			}
-		}
-
-		if (!net_handle) net_handle = InternetOpen("Luna", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-		if (!net_handle) {
-			return{};
-		}
-		DWORD context = 567;
-		HINTERNET connection = InternetConnect(net_handle, address, 80, NULL, NULL, INTERNET_SERVICE_HTTP, 0, (DWORD_PTR)&context);
-		if (!connection) {
-			return{};
-		}
-		char *rgpszAcceptTypes[] = {"text/*", "image/*", "font/*", NULL};
-		HINTERNET request = HttpOpenRequestA(connection, NULL, url_file, NULL, NULL, (LPCSTR*)&rgpszAcceptTypes, 0, (DWORD_PTR)&context);
-		if (!request) {
-			return{};
-		}
-		bool send_result = HttpSendRequest(request, NULL, 0, NULL, 0);
-		if (!send_result) {
-			return{};
-		}
-		DWORD read_len;
-		BOOL result = InternetReadFile(request, _file_buffer, array_size(_file_buffer), &read_len);
-		if (!result) {
-			return{};
-		}
-#endif
-		char *mem = (char*)malloc(_file_buffer_size + 1);
-		memcpy(mem, _file_buffer, _file_buffer_size);
-		mem[_file_buffer_size] = 0;
-		return {mem, _file_buffer_size};
+		return http_get(address);
 	}
 }
 
-FileResult http_post(char *file, char *post) {
-	memset(_file_buffer, 0, _file_buffer_size);
-	_file_buffer_size = 0;
+// FileResult http_post(char *file, char *post) {
+// 	memset(_file_buffer, 0, _file_buffer_size);
+// 	_file_buffer_size = 0;
 
-	// char address[256] = {};
-	// strcpy(address, _path);
-	// strcat(address, file);
-
-	// int i;
-	// char url_file[64] = {};
-	// url_file[0] = '/';
-	// for (i = 0; i < strlen(address); ++i) {
-	// 	if (address[i] == '/') {
-	// 		address[i] = 0;
-	// 		strcat(url_file, address+i+1);
-	// 		break;
-	// 	}
-	// }
-
-#ifdef __APPLE__
-		static CURL *c = NULL;
-		if (!c) {
-			curl_global_init(CURL_GLOBAL_ALL);
-			c = curl_easy_init();
-		}
-		curl_easy_setopt(c, CURLOPT_URL, file);
-		curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
-		curl_easy_setopt(c, CURLOPT_POSTFIELDS, post);
-		curl_easy_setopt(c, CURLOPT_POST, true);
-		CURLcode result = curl_easy_perform(c);
-#endif
-#ifdef _WIN32
-	if (!net_handle) net_handle = InternetOpen("Luna", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-	if (!net_handle) {
-		return{};
-	}
-	DWORD context = 567;
-	HINTERNET connection = InternetConnect(net_handle, address, 80, NULL, NULL, INTERNET_SERVICE_HTTP, 0, (DWORD_PTR)&context);
-	if (!connection) {
-		return{};
-	}
-	char *rgpszAcceptTypes[] = {"text/*", "image/*", "font/*", NULL};
-	HINTERNET request = HttpOpenRequestA(connection, NULL, url_file, NULL, NULL, (LPCSTR*)&rgpszAcceptTypes, 0, (DWORD_PTR)&context);
-	if (!request) {
-		return{};
-	}
-	bool send_result = HttpSendRequest(request, NULL, 0, post, 0);
-	if (!send_result) {
-		return{};
-	}
-	DWORD read_len;
-	BOOL result = InternetReadFile(request, _file_buffer, array_size(_file_buffer), &read_len);
-	if (!result) {
-		return{};
-	}
-#endif
-
-	char *mem = (char*)malloc(_file_buffer_size + 1);
-	memcpy(mem, _file_buffer, _file_buffer_size);
-	mem[_file_buffer_size] = 0;
-	return{mem, _file_buffer_size};
-}
+// #ifdef __APPLE__
+// 		static CURL *c = NULL;
+// 		if (!c) {
+// 			curl_global_init(CURL_GLOBAL_ALL);
+// 			c = curl_easy_init();
+// 		}
+// 		curl_easy_setopt(c, CURLOPT_URL, file);
+// 		curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curl_data_write);
+// 		curl_easy_setopt(c, CURLOPT_POSTFIELDS, post);
+// 		curl_easy_setopt(c, CURLOPT_POST, true);
+// 		CURLcode result = curl_easy_perform(c);
+// #endif
+// 	char *mem = (char*)malloc(_file_buffer_size + 1);
+// 	memcpy(mem, _file_buffer, _file_buffer_size);
+// 	mem[_file_buffer_size] = 0;
+// 	return{mem, _file_buffer_size};
+// }
 
 #ifdef __APPLE__
 #define DEBUG_FONT "/Library/Fonts/Courier New Bold.ttf"
@@ -355,13 +332,13 @@ int main(int argc, char **argv)
 
 	// printf("%s\n%s\n", path, _address);
 
-	FileResult test = http_post("http://138.68.149.32/luna-chat/web/app.php/api/login",
-		"{\n"
-		"    \"username\": \"matt\",\n"
-		"    \"password\": \"test\"\n"
-		"}");
-	int x = 0;
-	printf("post response%s\n", test.str);
+	// FileResult test = http_post("http://138.68.149.32/luna-chat/web/app.php/api/login",
+	// 	"{\n"
+	// 	"    \"username\": \"matt\",\n"
+	// 	"    \"password\": \"test\"\n"
+	// 	"}");
+	// int x = 0;
+	// printf("post response%s\n", test.str);
 
 	printf("\n");
 	_engine.run();
