@@ -203,7 +203,7 @@ struct Engine {
 			printf("SDL_RegisterEvents failed! \n");
 		}
 
-		LoadFont(DEBUG_FONT, 1.0f);
+		LoadLocalFont(DEBUG_FONT, 1.0f);
 
 		lua_thread = create_thread(lua_thread_proc, &lua);
 

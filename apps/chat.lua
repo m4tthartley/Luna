@@ -1,8 +1,10 @@
 
 -- Chat app
 
+print("before libs")
 local tprint = loadstring(load_module("tprint.lua"))()
 local mlg = loadstring(load_module("mlg.lua"))()
+print("after libs")
 
 function vec4(x, y, z, w)
 	return {
@@ -172,6 +174,7 @@ function getmessages()
 		[[{
 			"token": ]]..login.token..[[
 		}]])
+	print(res)
 	return loadstring(res)()
 end
 function getuser(id)

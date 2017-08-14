@@ -104,6 +104,41 @@ int LoadFont(char *File, float scale)
 	return font_count++;
 }
 
+int LoadLocalFont(char *File, float scale)
+{
+	FontCache *font = &fonts[font_count];
+	// Font.BitmapScale = 1.0f;
+	// Font.RenderScale = 1.0f / Font.BitmapScale;
+
+	// FileResult f = load_file(File);
+	FileResult f = load_file(File);
+
+	if (f.data) {
+		stbtt_InitFont(&font->STBFontInfo, (unsigned char*)f.data, stbtt_GetFontOffsetForIndex((unsigned char*)f.data, 0));
+		stbtt_GetFontVMetrics(&font->STBFontInfo, &font->Ascent, &font->Descent, &font->LineGap);
+		
+		//fontCache->assetID = font->assetID;
+		float size = DEFAULT_FONT_SIZE * scale;
+		font->glyphScale = stbtt_ScaleForPixelHeight(&font->STBFontInfo, size);
+		//size *= renderState->viewportScale;
+		font->size = (int)size;
+		font->pixelGlyphScale = stbtt_ScaleForPixelHeight(&font->STBFontInfo, size);
+
+		strcpy(font->file, File);
+
+		printf("font %s\n", File);
+		// printf("ascent %i\n", font->Ascent);
+		// printf("descent %i\n", font->Descent);
+		// printf("linegap %i\n", font->LineGap);
+
+		atomic_swap32(&font->loaded, true);
+	} else {
+		return -1;
+	}
+
+	return font_count++;
+}
+
 FontCache *GetFontCache(char *font_file, float size) {
 	float s = DEFAULT_FONT_SIZE * size;
 	for (int i = 0; i < font_count; ++i) {

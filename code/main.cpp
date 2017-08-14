@@ -194,6 +194,8 @@ FileResult load_universal_file(char *file) {
 	strcpy(address, _path);
 	strcat(address, file);
 
+	printf("load_universal_file %s \n", address);
+
 	bool local_load = _local;
 	if (file[0] == 'u' &&
 		file[1] == 'r' &&
@@ -330,7 +332,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// printf("%s\n%s\n", path, _address);
+	printf("%s %s\n", _path, _address);
 
 	// FileResult test = http_post("http://138.68.149.32/luna-chat/web/app.php/api/login",
 	// 	"{\n"
