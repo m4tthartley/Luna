@@ -46,6 +46,9 @@ enum InputEventType {
 	EVENT_MOUSE_MOTION,
 	EVENT_MOUSE_WHEEL,
 	EVENT_WINDOW_RESIZE,
+	EVENT_KEY_DOWN,
+	EVENT_KEY_UP,
+	EVENT_TEXT,
 	// todo: keyboard events
 };
 struct LunaEvent {
@@ -72,6 +75,10 @@ struct LunaEvent {
 			int2 mouse_position;
 			int amount;
 			int2 window_size;
+			union {
+				char key[64];
+				char text[64];
+			};
 		} input;
 	};
 };

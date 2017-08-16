@@ -376,6 +376,8 @@ int lua_next_event(lua_State *l) {
 		lua_newtable(l);
 		lua_pushstring(l, "button"); lua_pushnumber(l, event.input.mouse_button); lua_settable(l, -3);
 		lua_pushstring(l, "amount"); lua_pushnumber(l, event.input.amount); lua_settable(l, -3);
+		lua_pushstring(l, "key"); lua_pushstring(l, event.input.key); lua_settable(l, -3);
+		lua_pushstring(l, "text"); lua_pushstring(l, event.input.text); lua_settable(l, -3);
 
 		lua_pushstring(l, "pos");
 		lua_newtable(l);
@@ -405,6 +407,15 @@ int lua_next_event(lua_State *l) {
 				break;
 			case EVENT_WINDOW_RESIZE:
 				lua_pushstring(l, "window_resize");
+				break;
+			case EVENT_KEY_DOWN:
+				lua_pushstring(l, "key_down");
+				break;
+			case EVENT_KEY_UP:
+				lua_pushstring(l, "key_up");
+				break;
+			case EVENT_TEXT:
+				lua_pushstring(l, "text");
 				break;
 		}
 		lua_settable(l, -3);

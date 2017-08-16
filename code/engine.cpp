@@ -2,12 +2,14 @@
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
 #define GL_MULTISAMPLE                    0x809D
 
-static int mousex;
-static int mousey;
-static int fps;
-static int tps;
-static int qps;
-static void addqps(int num) { qps += num; }
+char *str_tolower(char *str) {
+	char *s = str;
+	while (*s) {
+		*s = tolower(*s);
+		++s;
+	}
+	return str;
+}
 
 void lua_thread_proc(void *arg) {
 	// do {
@@ -237,15 +239,15 @@ struct Engine {
 						e.type = EVENT_MOUSE_DOWN;
 						if (event.button.button == SDL_BUTTON_LEFT) {
 							update_digital_button(&rain.mouse.left, true);
-							e.input.mouse_button = 0;
+							e.input.mouse_button = 1;
 						}
 						if (event.button.button == SDL_BUTTON_RIGHT) {
 							update_digital_button(&rain.mouse.right, true);
-							e.input.mouse_button = 1;
+							e.input.mouse_button = 2;
 						}
 						if (event.button.button == SDL_BUTTON_MIDDLE) {
 							update_digital_button(&rain.mouse.middle, true);
-							e.input.mouse_button = 2;
+							e.input.mouse_button = 3;
 						}
 						input_queue.push_event(e);
 						break;}
@@ -254,15 +256,15 @@ struct Engine {
 						e.type = EVENT_MOUSE_UP;
 						if (event.button.button == SDL_BUTTON_LEFT) {
 							update_digital_button(&rain.mouse.left, false);
-							e.input.mouse_button = 0;
+							e.input.mouse_button = 1;
 						}
 						if (event.button.button == SDL_BUTTON_RIGHT) {
 							update_digital_button(&rain.mouse.right, false);
-							e.input.mouse_button = 1;
+							e.input.mouse_button = 2;
 						}
 						if (event.button.button == SDL_BUTTON_MIDDLE) {
 							update_digital_button(&rain.mouse.middle, false);
-							e.input.mouse_button = 2;
+							e.input.mouse_button = 3;
 						}
 						input_queue.push_event(e);
 						break;}
@@ -304,6 +306,25 @@ struct Engine {
 							lua = {};
 							lua_thread = create_thread(lua_thread_proc, &lua);
 						}
+
+						LunaEvent e = {};
+						e.type = EVENT_KEY_DOWN;
+						strcpy(e.input.key, SDL_GetKeyName(event.key.keysym.sym));
+						str_tolower(e.input.key);
+						input_queue.push_event(e);
+						break;}
+					{case SDL_KEYUP:
+						LunaEvent e = {};
+						e.type = EVENT_KEY_UP;
+						strcpy(e.input.key, SDL_GetKeyName(event.key.keysym.sym));
+						str_tolower(e.input.key);
+						input_queue.push_event(e);
+						break;}
+					{case SDL_TEXTINPUT:
+						LunaEvent e = {};
+						e.type = EVENT_TEXT;
+						strcpy(e.input.text, event.text.text);
+						input_queue.push_event(e);
 						break;}
 				}
 

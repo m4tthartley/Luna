@@ -1,6 +1,4 @@
 
-print("MLG")
-
 -- local _mlg = {
 -- 	col_size = 1,
 -- 	col_pos = vec2(0, 0)
@@ -36,9 +34,14 @@ local mlg = {
 	col_size = 0,
 	mouse_pos = vec2(0, 0),
 	scroll = 0.0,
+	mouse = {false, false, false},
+	active_input = nil,
 
 	cols = {},
 	col_index = 1,
+
+	inputs = {},
+	input_index = 1,
 }
 
 function mlg:begin()
@@ -47,14 +50,47 @@ function mlg:begin()
 	self.col_pos = vec2(0, 0)
 	self.col_size = 0
 	self.col_index = 1
+	self.input_index = 1
+end
+
+function mlg:finish()
+	self.mouse[1] = false
+	self.mouse[2] = false
+	self.mouse[3] = false
 end
 
 function mlg:update_mouse_pos(pos)
 	self.mouse_pos = pos
 end
 
+function mlg:press_mouse_button(button)
+	self.mouse[button] = true
+	if button == 1 then
+		self.active_input = nil
+	end
+end
+
 function mlg:update_scroll(amount)
 	self.scroll = self.scroll + amount
+end
+
+function mlg:update_key(key, state)
+	if key == "return" and state then
+		if self.active_input then
+			self.active_input.go = true
+		end
+	end
+	if key == "backspace" and state then
+		if self.active_input then
+			self.active_input.text = self.active_input.text:sub(1, -2)
+		end
+	end
+end
+
+function mlg:update_text(text)
+	if self.active_input then
+		self.active_input.text = self.active_input.text .. text
+	end
 end
 
 function mlg:row(width, callback)
@@ -138,16 +174,48 @@ function mlg:is_in_box(pos, box)
 end
 
 function mlg:text_input()
+	if self.inputs[self.input_index] then else
+		self.inputs[self.input_index] = { active = false, timer = 0, text = "", go = false }
+	end
+
+	self.inputs[self.input_index].timer = (self.inputs[self.input_index].timer + 1) % 40
+
 	local pos = mlg:box(30, vec4(0, 0, 0, 0), vec2(0, 0))
 	local mouse = mouse_pos()
 	if self:is_in_box(mouse, pos) then
 		set_color(1, 1, 1, 1)
+		if self.mouse[1] then
+			self.inputs[self.input_index].active = true
+			self.active_input = self.inputs[self.input_index]
+		end
 	else
 		set_color(1, 1, 1, 0.5)
+		if self.mouse[1] then
+			self.inputs[self.input_index].active = false
+		end
+	end
+	if self.inputs[self.input_index].active then
+		set_color(1, 0.5, 0.5, 1)
 	end
 	draw_line_rect(pos.x, pos.y, pos.w, pos.h)
 	set_color(1, 1, 1, 1)
-	draw_font("jellee.ttf", 1.0, "testing", pos.x+10, pos.y+4, pos.w - 20)
+	local str = self.inputs[self.input_index].text
+	if self.inputs[self.input_index].active and 
+	   self.inputs[self.input_index].timer < 20 then
+		str = str .. "|"
+	end
+	draw_font("jellee.ttf", 1.0, str, pos.x+10, pos.y+4, pos.w - 20)
+
+	local go = self.inputs[self.input_index].go
+	self.inputs[self.input_index].go = false
+	local text = self.inputs[self.input_index].text
+
+	self.input_index = self.input_index + 1
+
+	return {
+		go = go,
+		text = text,
+	}
 end
 
 --[[

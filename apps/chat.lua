@@ -1,10 +1,8 @@
 
 -- Chat app
 
-print("before libs")
 local tprint = loadstring(load_module("tprint.lua"))()
 local mlg = loadstring(load_module("mlg.lua"))()
-print("after libs")
 
 function vec4(x, y, z, w)
 	return {
@@ -19,8 +17,6 @@ function vec4(x, y, z, w)
 		a = w or 0.0,
 	}
 end
-
-tprint(_mlg)
 
 function mlg_test_stuff()
 	mlg:begin()
@@ -138,9 +134,7 @@ local login = http_post("http://138.68.149.32/luna-chat/web/app.php/api/login",
 	"username": "matt",
 	"password": "test"
 }]])
-print(login)
 login = loadstring(login)()
-print("token", login.token)
 
 -- local post_result = http_post("http://138.68.149.32/luna-chat/web/app.php/api/postmessage",
 -- [[{
@@ -174,7 +168,6 @@ function getmessages()
 		[[{
 			"token": ]]..login.token..[[
 		}]])
-	print("getmessages", res)
 	res = string.gsub(res, "\n", "[N]")
 	return loadstring(res)()
 end
@@ -194,9 +187,16 @@ function getnewmessages(id)
 		}]])
 	return loadstring(res)()
 end
+function postmessage(str)
+	local res = http_post("http://138.68.149.32/luna-chat/web/app.php/api/postmessage",
+	[[{
+		"token": ]]..login.token..[[,
+		"message": "]]..str..[["
+	}]])
+	print(res)
+end
 
 local messages = getmessages()
-tprint(messages)
 local users = {}
 for i,msg in ipairs(messages) do
 	if not users[msg.user_id] then
@@ -204,17 +204,40 @@ for i,msg in ipairs(messages) do
 	end
 end
 
--- local users = getmessages()
--- tprint(messages)
+local last_time = get_seconds()
 
 while true do
 	clear_rect(0, 0, 1280, 720)
+
+	local time = get_seconds()
+	if time - last_time > 5.0 then
+		last_time = time
+		local new = getnewmessages(messages[#messages].id)
+		if #new > 0 then tprint(new) end
+		for i,v in ipairs(new) do
+			table.insert(messages, v)
+		end
+	end
 	
 	local event = next_event()
 	while event do
-		-- tprint(event)
 		if event.type == "mouse_wheel" then
 			mlg:update_scroll(event.amount)
+		end
+		if event.type == "mouse_down" then
+			mlg:press_mouse_button(event.button)
+		end
+		if event.type == "key_down" then
+			-- print("key down: " .. event.key)
+			mlg:update_key(event.key, true)
+		end
+		if event.type == "key_up" then
+			-- print("key up: " .. event.key)
+			mlg:update_key(event.key, false)
+		end
+		if event.type == "text" then
+			-- print(event.text)
+			mlg:update_text(event.text)
 		end
 		event = next_event()
 	end
@@ -331,7 +354,9 @@ while true do
 
 			mlg:row(600, function()
 				mlg:col(vec2(600, 500), {scroll = true}, function()
-					for i,msg in ipairs(messages) do
+					-- for i=(#messages-50),msg in ipairs(messages) do
+					for i=math.max(#messages-10, 1), #messages do
+						local msg = messages[i]
 						mlg:box(20, vec4(0, 0, 0, 1))
 						-- mlg:box(1, vec4(0.1, 0.1, 0.1, 1), vec2(10, 0))
 						-- mlg:text("jellee.ttf", 1, msg.user..":", vec4(0.6, 0.7, 0.8, 1), vec2(10, 1))
@@ -354,14 +379,20 @@ while true do
 					mlg:row(600, function()
 						mlg:col(600, function()
 							mlg:spacer(20)
-							mlg:text_input()
+							local send = mlg:text_input()
+							if send.go and #send.text > 0 then
+								mlg.active_input.text = ""
+								-- print("go: " .. send.text)
+								postmessage(send.text)
+							end
 						end)
 					end)
 				end)
 			end)
 		end)
 	end)
+	mlg:finish()
 
 	present()
-	sleep(30)
+	sleep(16)
 end
