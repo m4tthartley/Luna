@@ -174,7 +174,8 @@ function getmessages()
 		[[{
 			"token": ]]..login.token..[[
 		}]])
-	print(res)
+	print("getmessages", res)
+	res = string.gsub(res, "\n", "[N]")
 	return loadstring(res)()
 end
 function getuser(id)
@@ -208,7 +209,16 @@ end
 
 while true do
 	clear_rect(0, 0, 1280, 720)
-	-- draw_rect(math.random()*1000, math.random()*1000, 10, 10)
+	
+	local event = next_event()
+	while event do
+		-- tprint(event)
+		if event.type == "mouse_wheel" then
+			mlg:update_scroll(event.amount)
+		end
+		event = next_event()
+	end
+	mlg:update_mouse_pos(mouse_pos())
 
 	--[[
 	mlg:begin()
@@ -319,30 +329,39 @@ while true do
 			mlg:text("jellee.ttf", 2, "Chat", vec4(0.6, 0.7, 0.8, 1), vec2(10, 10))
 			mlg:box(2, vec4(0.1, 0.1, 0.1, 1))
 
-			for i,msg in ipairs(messages) do
-				mlg:box(20, vec4(0, 0, 0, 1))
-				-- mlg:box(1, vec4(0.1, 0.1, 0.1, 1), vec2(10, 0))
-				-- mlg:text("jellee.ttf", 1, msg.user..":", vec4(0.6, 0.7, 0.8, 1), vec2(10, 1))
-				-- mlg:text("jellee.ttf", 1, msg.text, vec4(1, 1, 1, 1), vec2(10, 1))
-				mlg:row(600, function()
-					mlg:col(100, function()
-						mlg:text("jellee.ttf", 1, users[msg.user_id].username..":", vec4(0.6, 0.7, 0.8, 1), vec2(10, 1))
-					end)
-					mlg:col(500, function()
-						mlg:text("jellee.ttf", 1, msg.text, vec4(1, 1, 1, 1), vec2(10, 1))
-					end)
-				end)
-			end
-
 			mlg:row(600, function()
-				mlg:col(600, function()
-					mlg:spacer(20)
-					mlg:text_input()
+				mlg:col(vec2(600, 500), {scroll = true}, function()
+					for i,msg in ipairs(messages) do
+						mlg:box(20, vec4(0, 0, 0, 1))
+						-- mlg:box(1, vec4(0.1, 0.1, 0.1, 1), vec2(10, 0))
+						-- mlg:text("jellee.ttf", 1, msg.user..":", vec4(0.6, 0.7, 0.8, 1), vec2(10, 1))
+						-- mlg:text("jellee.ttf", 1, msg.text, vec4(1, 1, 1, 1), vec2(10, 1))
+						mlg:row(600, function()
+							mlg:col(100, function()
+								mlg:text("jellee.ttf", 1, users[msg.user_id].username..":", vec4(0.6, 0.7, 0.8, 1), vec2(10, 1))
+							end)
+							mlg:col(500, function()
+								mlg:text("jellee.ttf", 1, msg.text, vec4(1, 1, 1, 1), vec2(10, 1))
+								mlg:row(500, function()
+									mlg:col(500, function()
+										mlg:text("jellee.ttf", 0.7, msg.created_at, vec4(0.5, 0.5, 0.5, 1), vec2(10, 1))
+									end)
+								end)
+							end)
+						end)
+					end
+
+					mlg:row(600, function()
+						mlg:col(600, function()
+							mlg:spacer(20)
+							mlg:text_input()
+						end)
+					end)
 				end)
 			end)
 		end)
 	end)
 
 	present()
-	sleep(16)
+	sleep(30)
 end

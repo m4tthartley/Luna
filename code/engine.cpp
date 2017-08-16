@@ -114,6 +114,7 @@ struct Engine {
 
 			case EVENT_LOAD_FONT:
 				LoadFont(e.draw.file, e.draw.scale);
+				free(e.draw.file);
 				break;
 			case EVENT_DRAW_FONT:
 				draw_font(e.draw.file, e.draw.scale, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.size.x);
@@ -275,7 +276,7 @@ struct Engine {
 						break;}
 					{case SDL_MOUSEWHEEL:
 						LunaEvent e = {};
-						e.type = EVENT_MOUSE_MOTION;
+						e.type = EVENT_MOUSE_WHEEL;
 						rain.mouse.wheel_delta += event.wheel.y;
 						e.input.amount = event.wheel.y;
 						input_queue.push_event(e);

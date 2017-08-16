@@ -19,7 +19,7 @@
 
 struct FontCache {
 	//asset_id assetID; // Probably can remove this, erm actually not
-	int size;
+	float size;
 	float glyphScale;
 	float pixelGlyphScale;
 	char file[256];
@@ -69,8 +69,15 @@ void init_font_system() {
 	// glClearTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
 }
 
-int LoadFont(char *File, float scale)
-{
+int LoadFont(char *File, float scale) {
+	float s = DEFAULT_FONT_SIZE * scale;
+	for (int i = 0; i < font_count; ++i) {
+		if (strcmp(File, fonts[i].file)==0 &&
+			s > fonts[i].size-0.1f && s < fonts[i].size+0.1f) {
+			return i;
+		}
+	}
+
 	FontCache *font = &fonts[font_count];
 	// Font.BitmapScale = 1.0f;
 	// Font.RenderScale = 1.0f / Font.BitmapScale;
@@ -86,12 +93,12 @@ int LoadFont(char *File, float scale)
 		float size = DEFAULT_FONT_SIZE * scale;
 		font->glyphScale = stbtt_ScaleForPixelHeight(&font->STBFontInfo, size);
 		//size *= renderState->viewportScale;
-		font->size = (int)size;
+		font->size = size;
 		font->pixelGlyphScale = stbtt_ScaleForPixelHeight(&font->STBFontInfo, size);
 
 		strcpy(font->file, File);
 
-		printf("font %s\n", File);
+		printf("font %s %f\n", File, scale);
 		// printf("ascent %i\n", font->Ascent);
 		// printf("descent %i\n", font->Descent);
 		// printf("linegap %i\n", font->LineGap);

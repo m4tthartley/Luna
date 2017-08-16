@@ -449,7 +449,12 @@ int lua_font_dimensions(lua_State* l) {
 	char *str = (char*)lua_tostring(l, 3);
 	float width = lua_tonumber(l, 4);
 
-	float2 dim = GetTextDim(font_file, str, size, width);
+	char *f = (char*)malloc(strlen(font_file)+1);
+	strcpy(f, font_file);
+	char *s = (char*)malloc(strlen(str)+1);
+	strcpy(s, str);
+	float2 dim = GetTextDim(f, s, size, width);
+	free(s);
 	// lua_pushnumber(l, dim.x);
 	// lua_pushnumber(l, dim.y);
 	lua_newtable(l);

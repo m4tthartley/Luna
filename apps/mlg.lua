@@ -34,6 +34,11 @@ local mlg = {
 	row_size = vec2(0, 0),
 	-- col_offset = vec2(0, 0),
 	col_size = 0,
+	mouse_pos = vec2(0, 0),
+	scroll = 0.0,
+
+	cols = {},
+	col_index = 1,
 }
 
 function mlg:begin()
@@ -41,6 +46,15 @@ function mlg:begin()
 	self.row_size = vec2(0, 0)
 	self.col_pos = vec2(0, 0)
 	self.col_size = 0
+	self.col_index = 1
+end
+
+function mlg:update_mouse_pos(pos)
+	self.mouse_pos = pos
+end
+
+function mlg:update_scroll(amount)
+	self.scroll = self.scroll + amount
 end
 
 function mlg:row(width, callback)
@@ -59,11 +73,36 @@ function mlg:row(width, callback)
 	self.col_size = csize
 end
 
-function mlg:col(width, callback)
-	self.col_pos.y = 0
-	self.col_size = width
+function mlg:col(width, options, callback)
+	if type(options) == "function" then
+		callback = options
+		options = {scroll = false}
+	end
+
+	local size
+	if type(width) == "table" then size = width
+	else size = vec2(width, 0) end
+
+	if self.cols[self.col_index] then else
+		self.cols[self.col_index] = { scroll = 0 }
+	end
+
+	if options.scroll then
+		if self.mouse_pos.x > self.row_pos.x+self.col_pos.x and
+			self.mouse_pos.x < self.row_pos.x+self.col_pos.x+size.x and
+			self.mouse_pos.y > self.row_pos.y+self.col_pos.y and
+			self.mouse_pos.y < self.row_pos.y+self.col_pos.y+size.y then
+			draw_rect(self.row_pos.x+self.col_pos.x, self.row_pos.y+self.col_pos.y, size.x, size.y)
+			self.cols[self.col_index].scroll = self.cols[self.col_index].scroll + self.scroll*5
+			self.scroll = 0
+		end
+	end
+
+	self.col_pos.y = self.cols[self.col_index].scroll
+	self.col_size = size.x
+	self.col_index = self.col_index + 1
 	callback()
-	self.col_pos.x = self.col_pos.x + width
+	self.col_pos.x = self.col_pos.x + size.x
 	self.row_size.x = math.max(self.row_size.x, self.col_pos.x)
 end
 

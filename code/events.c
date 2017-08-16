@@ -78,7 +78,7 @@ struct LunaEvent {
 
 struct EventQueue {
 
-	LunaEvent events[256];
+	LunaEvent events[/*256*/1024*10];
 	int push_index = 0; // pushing thread
 	int pull_index = 0; // pulling thread
 	int count = 0; 		// both threads

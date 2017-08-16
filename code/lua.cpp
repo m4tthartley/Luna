@@ -174,11 +174,15 @@ void Lua::init(char *lua_file) {
 
 		char *error_str = (char*)lua_tostring(l, -1);
 		char *temp = (char*)malloc(strlen(error_str+1));
+		char *error_str2 = (char*)malloc(strlen(error_str+1));
 		strcpy(temp, error_str);
+		strcpy(error_str2, error_str);
 		error_str = temp;
 
 		char *font = (char*)malloc(strlen(DEBUG_FONT+1));
 		strcpy(font, DEBUG_FONT);
+		char *font2 = (char*)malloc(strlen(DEBUG_FONT+1));
+		strcpy(font2, DEBUG_FONT);
 		float2 dim = GetTextDim(font, error_str, 1.0f, 0);
 
 		{LunaEvent event = {};
@@ -199,9 +203,9 @@ void Lua::init(char *lua_file) {
 
 		{LunaEvent e = {};
 		e.type = EVENT_DRAW_FONT;
-		e.draw.file = font;
+		e.draw.file = font2;
 		e.draw.scale = 1.0f;
-		e.draw.str = error_str;
+		e.draw.str = error_str2;
 		e.draw.pos.x = 10;
 		e.draw.pos.y = 10;
 		e.draw.size.x = rain.window_width - 20;
