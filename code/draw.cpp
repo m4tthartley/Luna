@@ -18,6 +18,7 @@ float2 _tex_coords[4] = {
 float current_rotation = 0.0f;
 
 float4 _clear_color = {0, 0, 0, 1};
+float4 _current_color = {0, 0, 0, 1};
 
 void draw_line(float x, float y, float x2, float y2) {
 	glBegin(GL_LINES);

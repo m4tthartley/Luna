@@ -11,6 +11,7 @@ char *str_tolower(char *str) {
 	return str;
 }
 
+bool _lua_thread_running = false;
 void lua_thread_proc(void *arg) {
 	// do {
 	// 	if (reload) {
@@ -27,9 +28,11 @@ void lua_thread_proc(void *arg) {
 	// 	lua.appFunc("run");
 	// } while (reload);
 
+	_lua_thread_running = true;
 	Lua *lua = (Lua*)arg;
 	*lua = {};
 	lua->init(_address);
+	_lua_thread_running = false;
 }
 
 struct Engine {
@@ -52,6 +55,9 @@ struct Engine {
 
 	Thread lua_thread;
 
+	bool bar_active = false;
+	char bar_text[256] = {};
+
 	/*Engine();
 	void run();
 	int time();
@@ -64,6 +70,18 @@ struct Engine {
 	static int getQps(lua_State* l);*/
 
 	SDL_Window *sdl_window;
+
+	void reload_instance(char *file) {
+		set_run_file(file);
+		destroy_thread(lua_thread);
+		for (int i = 0; i < texture_count; ++i) {
+			glDeleteTextures(1, &textures[i].tex);
+		}
+		texture_count = 0;
+		lua_close(lua.l);
+		lua = {};
+		lua_thread = create_thread(lua_thread_proc, &lua);
+	}
 
 	void process_luna_event(LunaEvent e) {
 		switch (e.type) {
@@ -96,6 +114,7 @@ struct Engine {
 				break;
 			case EVENT_SET_COLOR:
 				glColor4f(e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a);
+				_current_color = {e.draw.color.r, e.draw.color.g, e.draw.color.b, e.draw.color.a};
 				break;
 			case EVENT_LOAD_TEXTURE:
 				textures[e.draw.texture].tex = _load_texture(textures[e.draw.texture].file);
@@ -116,11 +135,11 @@ struct Engine {
 
 			case EVENT_LOAD_FONT:
 				LoadFont(e.draw.file, e.draw.scale);
-				free(e.draw.file);
+				// free(e.draw.file);
 				break;
 			case EVENT_DRAW_FONT:
 				draw_font(e.draw.file, e.draw.scale, e.draw.str, {e.draw.pos.x, e.draw.pos.y, 0}, e.draw.size.x);
-				free(e.draw.file);
+				// free(e.draw.file);
 				free(e.draw.str);
 				break;
 		}
@@ -188,13 +207,13 @@ struct Engine {
 		glEnable(GL_ALPHA_TEST);
 
 		//glViewport(0, 0, (int)(width*viewportScale), (int)(height*viewportScale));
-		glViewport(0, 0, rain.window_width, rain.window_height);
+		glViewport(0, 0, rain.window_width, rain.window_height - URL_BAR_HEIGHT);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		/*glOrtho(0, width, height, 0, -100, 100);*/
 		glOrtho(0, rain.window_width, rain.window_height, 0, -100, 100);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+		/*glOrtho(0, width, height, 0, -100, 100);*/
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 		SDL_GL_SwapWindow(sdl_window);
@@ -226,6 +245,8 @@ struct Engine {
 			rain.mouse.right.released = false;
 			rain.mouse.middle.pressed = false;
 			rain.mouse.middle.released = false;
+
+			char input_text[64] = {};
 			
 			SDL_Event event;
 			SDL_WaitEvent(&event);
@@ -240,6 +261,12 @@ struct Engine {
 						if (event.button.button == SDL_BUTTON_LEFT) {
 							update_digital_button(&rain.mouse.left, true);
 							e.input.mouse_button = 1;
+							if (rain.mouse.position.x > 0 && rain.mouse.position.x < rain.window_width &&
+								rain.mouse.position.y > 0 && rain.mouse.position.y < URL_BAR_HEIGHT) {
+								bar_active = true;
+							} else {
+								bar_active = false;
+							}
 						}
 						if (event.button.button == SDL_BUTTON_RIGHT) {
 							update_digital_button(&rain.mouse.right, true);
@@ -297,14 +324,7 @@ struct Engine {
 						break;}
 					{case SDL_KEYDOWN:
 						if ((rain.keys[SDL_SCANCODE_LCTRL].down || rain.keys[SDL_SCANCODE_LGUI].down) && event.key.keysym.scancode == SDL_SCANCODE_R) {
-							destroy_thread(lua_thread);
-							for (int i = 0; i < texture_count; ++i) {
-								glDeleteTextures(1, &textures[i].tex);
-							}
-							texture_count = 0;
-							lua_close(lua.l);
-							lua = {};
-							lua_thread = create_thread(lua_thread_proc, &lua);
+							reload_instance(_run_file);
 						}
 
 						LunaEvent e = {};
@@ -312,6 +332,19 @@ struct Engine {
 						strcpy(e.input.key, SDL_GetKeyName(event.key.keysym.sym));
 						str_tolower(e.input.key);
 						input_queue.push_event(e);
+
+						if (bar_active) {
+							if (strcmp(e.input.key, "backspace")==0) {
+								if (strlen(bar_text)>0) bar_text[strlen(bar_text)-1] = 0;
+							}
+							if (strcmp(e.input.key, "return")==0) {
+								if (strlen(bar_text)>0) {
+									char *file = (char*)malloc(strlen(bar_text)+1);
+									strcpy(file, bar_text);
+									reload_instance(file);
+								}
+							}
+						}
 						break;}
 					{case SDL_KEYUP:
 						LunaEvent e = {};
@@ -325,6 +358,7 @@ struct Engine {
 						e.type = EVENT_TEXT;
 						strcpy(e.input.text, event.text.text);
 						input_queue.push_event(e);
+						strcpy(input_text, event.text.text);
 						break;}
 				}
 
@@ -333,10 +367,58 @@ struct Engine {
 					// process_luna_event(e);
 				}
 			} while (SDL_PollEvent(&event));
-
+			atomic_swap32(&command_queue.window_event, false);
 			// printf("command events %i \n", atomic_fetch32(&command_queue.count));
 
-			atomic_swap32(&command_queue.window_event, false);
+			{
+				if (bar_active) {
+					strcat(bar_text, input_text);
+				}
+
+				glViewport(0, rain.window_height - URL_BAR_HEIGHT, rain.window_width, URL_BAR_HEIGHT);
+				glMatrixMode(GL_PROJECTION);
+				glLoadIdentity();
+				glOrtho(0, rain.window_width, URL_BAR_HEIGHT, 0, -100, 100);
+				glMatrixMode(GL_MODELVIEW);
+				glLoadIdentity();
+
+				glColor4f(0.1, 0.1, 0.1, 1);
+				draw_rect(0, 0, rain.window_width, URL_BAR_HEIGHT);
+
+				glColor4f(1, 1, 1, 1);
+				char *f = (char*)malloc(strlen(DEBUG_FONT)+1);
+				strcpy(f, DEBUG_FONT);
+				draw_font(f, 1.0f, bar_text, {10, 2});
+
+				glColor4f(1, 1, 1, 0.5);
+				if (rain.mouse.position.x > 0 && rain.mouse.position.x < rain.window_width &&
+					rain.mouse.position.y > 0 && rain.mouse.position.y < URL_BAR_HEIGHT) {
+					// if (rain.mouse.left.down) {
+					// 	bar_active = true;
+					// }
+					glColor4f(1, 1, 1, 1);
+				} /*else if (rain.mouse.left.down) {
+					bar_active = false;
+				}*/
+				if (bar_active) {
+					glColor4f(0.5f, 0.5f, 1, 1);
+				}
+				draw_line_rect(0, 0, rain.window_width, URL_BAR_HEIGHT);
+				glColor4f(_current_color.r, _current_color.g, _current_color.b, _current_color.a);
+
+				glViewport(0, 0, rain.window_width, rain.window_height - URL_BAR_HEIGHT);
+				glMatrixMode(GL_PROJECTION);
+				glLoadIdentity();
+				glOrtho(0, rain.window_width, rain.window_height - URL_BAR_HEIGHT, 0, -100, 100);
+				glMatrixMode(GL_MODELVIEW);
+				glLoadIdentity();
+
+				if (!_lua_thread_running) {
+					LunaEvent event = {};
+					event.type = EVENT_PRESENT;
+					command_queue.push_window_event(event);
+				}
+			}
 
 			// LunaEvent e;
 			// while ((e = command_queue.pull_event()).type != EVENT_NONE)

@@ -354,7 +354,7 @@ int lua_key_state(lua_State *l) {
 
 int lua_mouse_pos(lua_State *l) {
 	int x = atomic_fetch32((int*)&rain.mouse.position.x);
-	int y = atomic_fetch32((int*)&rain.mouse.position.y);
+	int y = atomic_fetch32((int*)&rain.mouse.position.y) - URL_BAR_HEIGHT;
 
 	lua_newtable(l);
 	lua_pushstring(l, "x"); lua_pushnumber(l, x); lua_settable(l, -3);

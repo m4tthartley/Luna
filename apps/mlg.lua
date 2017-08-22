@@ -93,6 +93,10 @@ function mlg:update_text(text)
 	end
 end
 
+function mlg:clear_inputs()
+	self.inputs = {}
+end
+
 function mlg:row(width, callback)
 	local pos = vec2(self.row_pos.x, self.row_pos.y)
 	local cpos = vec2(self.col_pos.x, self.col_pos.y)

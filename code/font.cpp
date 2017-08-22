@@ -384,6 +384,7 @@ void draw_font(char *font_file, float size, char *Text, float3 p, float Bounding
 	FontCache *Font = GetFontCache(font_file, size);
 	if (!Font) return;
 	if (!atomic_fetch32(&Font->loaded)) return;
+	free(font_file);
 
 	size = 1.0f;
 

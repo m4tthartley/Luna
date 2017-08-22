@@ -70,6 +70,8 @@ extern "C" {
 #include "videoLua.h"
 #include "videoLua.cpp"
 
+#define URL_BAR_HEIGHT 30
+
 /*
 #ifdef _WIN32
 		int i;
@@ -132,8 +134,28 @@ FileResult load_file(char *file) {
 }
 
 bool _local = false;
-char *_address = "file:main.lua";
+char *_address = "";
 char _path[256];
+char *_run_file = NULL;
+
+void set_run_file(char *file) {
+	_run_file = file;
+	_address = file;
+	memset(_path, 0, array_size(_path));
+	FILE *temp_file = fopen(_address, "r");
+	if (temp_file) {
+		_local = true;
+		fclose(temp_file);
+	}
+	for (int i = strlen(_address); i >= 0; --i) {
+		if (_address[i] == '/') {
+			memcpy(_path, _address, i+1);
+			_path[i+1] = 0;
+			_address += i+1;
+			break;
+		}
+	}
+}
 
 #ifdef _WIN32
 #define far
@@ -303,7 +325,7 @@ int main(int argc, char **argv)
 	curl_global_init(CURL_GLOBAL_ALL);
 #endif
 
-	if (argc > 1) _address = argv[1];
+	if (argc > 1) set_run_file(argv[1]);
 	// if (strlen(_address) > 5 &&
 	// 	_address[0] == 'f' &&
 	// 	_address[1] == 'i' &&
@@ -317,20 +339,6 @@ int main(int argc, char **argv)
 	// if (access(_address, F_OK)) {
 	// 	_local = true;
 	// }
-	FILE *temp_file = fopen(_address, "r");
-	if (temp_file) {
-		_local = true;
-		fclose(temp_file);
-	}
-
-	for (int i = strlen(_address); i >= 0; --i) {
-		if (_address[i] == '/') {
-			memcpy(_path, _address, i+1);
-			_path[i+1] = 0;
-			_address += i+1;
-			break;
-		}
-	}
 
 	printf("%s %s\n", _path, _address);
 

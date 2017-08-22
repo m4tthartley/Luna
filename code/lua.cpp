@@ -150,14 +150,25 @@ void Lua::init(char *lua_file) {
 	//if (confVar("mainpath")) mainpath = lua_tostring(l, -1);
 	//lua_pop(l, 1);
 
+	// bool error = false;
+
 	// printf("address: %s\n", lua_file);
 	FileResult main_file = load_universal_file(lua_file);
 	//printf("code: \n%s\n", main_file.str);
 
-	if (luaL_dostring(l, main_file.str) != 0) error = true;
-	// if (luaL_dofile(l, lua_file) != 0) error = true;
+	char error_str[256];
+	if (main_file.size) {
+		if (luaL_dostring(l, main_file.str) != 0) error = true;
+		if (lua_type(l, -1) == LUA_TSTRING) {
+			error = true;
+			strcpy(error_str, (char*)lua_tostring(l, -1));
+		}
+	} else {
+		sprintf(error_str, "Unable to load data from %s\n", lua_file);
+		error = true;
+	}
 
-	if (lua_type(l, -1) == LUA_TSTRING) {
+	if (error) {
 		// std::cout << lua_tostring(l, -1) << std::endl;
 		// luaL_dostring(l, "print(debug.traceback)");
 		// std::cout << lua_tostring(l, -1) << std::endl;
@@ -172,18 +183,17 @@ void Lua::init(char *lua_file) {
 		// 	lua_call(l, 2, 1);
 		// }
 
-		char *error_str = (char*)lua_tostring(l, -1);
 		char *temp = (char*)malloc(strlen(error_str+1));
 		char *error_str2 = (char*)malloc(strlen(error_str+1));
 		strcpy(temp, error_str);
 		strcpy(error_str2, error_str);
-		error_str = temp;
+		// error_str = temp;
 
 		char *font = (char*)malloc(strlen(DEBUG_FONT+1));
 		strcpy(font, DEBUG_FONT);
 		char *font2 = (char*)malloc(strlen(DEBUG_FONT+1));
 		strcpy(font2, DEBUG_FONT);
-		float2 dim = GetTextDim(font, error_str, 1.0f, 0);
+		float2 dim = GetTextDim(font, temp, 1.0f, 0);
 
 		{LunaEvent event = {};
 		event.type = EVENT_SET_COLOR;

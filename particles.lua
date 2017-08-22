@@ -1,8 +1,8 @@
 
-file_request("url:mattsblog.net/particles.lua")
-file_request("url:mattsblog.net/math.lua")
+-- file_request("url:mattsblog.net/particles.lua")
+-- file_request("url:mattsblog.net/math.lua")
 
-assert(loadstring(file_request("math.lua")))()
+assert(loadstring(load_module("math.lua")))()
 
 local particles = {}
 local counter = 0
@@ -39,17 +39,17 @@ end
 -- end
 
 function run()
-	print(file_request('josh.lua'))
-	local printlua = loadstring(file_request('print.lua'))
+	-- print(file_request('josh.lua'))
+	-- local printlua = loadstring(file_request('print.lua'))
 	-- print("printlua " .. printlua)
-	printlua()
+	-- printlua()
 
 	local frame_time = 0
 
 	while true do
 		local start_time = get_seconds()
-		update()
-		get_input()
+		-- update()
+		-- get_input()
 		time.dt = 1.0 / 60.0
 
 		local speed_mul = 1.0
@@ -192,10 +192,13 @@ function run()
 
 		frame_time = get_seconds() - start_time
 
-		swap_buffers()
+		present()
+		sleep(16)
 	end
 end
 
 function init()
 	window.title = "Matt's Particles"
 end
+
+run()
